@@ -1,6 +1,6 @@
 #include <ipasir2cpp.h>
 
-#include "mock/ipasir2_mock.h"
+#include "mock/ipasir2_mock_doctest.h"
 
 #include <list>
 #include <vector>
@@ -20,8 +20,8 @@ using ip2::optional_bool;
 
 TEST_CASE("solver::solve() functions")
 {
-  auto mock = create_ipasir2_mock();
-  ip2::ipasir2 api;
+  auto mock = create_ipasir2_doctest_mock();
+  ip2::ipasir2 api = ip2::ipasir2::create();
   std::vector<int32_t> assumptions = {1, -2, 3};
 
 

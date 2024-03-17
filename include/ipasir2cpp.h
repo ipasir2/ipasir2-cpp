@@ -6,6 +6,7 @@
 
 #include <ipasir2.h>
 
+#include <filesystem>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -18,6 +19,11 @@
 
 #if __has_include(<version>)
 #include <version>
+#endif
+
+#if defined(_POSIX_C_SOURCE) && __has_include(<dlfcn.h>)
+#include <dlfcn.h>
+#define IPASIR2CPP_HAS_DLOPEN
 #endif
 
 
@@ -73,6 +79,80 @@ private:
 
 
 namespace detail {
+  class shared_c_api {
+  public:
+#if defined(IPASIR2CPP_HAS_DLOPEN)
+    static shared_c_api load(std::filesystem::path const& shared_lib)
+    {
+      shared_c_api result;
+      load_lib(shared_lib, result);
+      load_sym(result.add, "ipasir2_add", result);
+      load_sym(result.failed, "ipasir2_failed", result);
+      load_sym(result.init, "ipasir2_init", result);
+      load_sym(result.release, "ipasir2_release", result);
+      load_sym(result.signature, "ipasir2_signature", result);
+      load_sym(result.solve, "ipasir2_solve", result);
+      load_sym(result.val, "ipasir2_val", result);
+      return result;
+    }
+#endif
+
+
+    template <typename = void /* prevent instantiation unless called */>
+    static shared_c_api with_linked_syms()
+    {
+      shared_c_api result;
+      result.add = &ipasir2_add;
+      result.failed = &ipasir2_failed;
+      result.init = &ipasir2_init;
+      result.release = &ipasir2_release;
+      result.signature = &ipasir2_signature;
+      result.solve = &ipasir2_solve;
+      result.val = &ipasir2_val;
+      return result;
+    }
+
+
+    decltype(&ipasir2_add) add = nullptr;
+    decltype(&ipasir2_failed) failed = nullptr;
+    decltype(&ipasir2_init) init = nullptr;
+    decltype(&ipasir2_release) release = nullptr;
+    decltype(&ipasir2_signature) signature = nullptr;
+    decltype(&ipasir2_solve) solve = nullptr;
+    decltype(&ipasir2_val) val = nullptr;
+
+
+  private:
+    std::shared_ptr<void> m_lib_handle;
+
+
+#if defined(IPASIR2CPP_HAS_DLOPEN)
+    static void load_lib(std::filesystem::path const& path, shared_c_api& api)
+    {
+      api.m_lib_handle = std::shared_ptr<void>(dlopen(path.c_str(), RTLD_NOW), [](void* lib) {
+        if (lib != nullptr) {
+          dlclose(lib);
+        }
+      });
+
+      if (api.m_lib_handle == nullptr) {
+        throw ipasir2_error{"Could not open the IPASIR2 library."};
+      }
+    }
+
+    template <typename F>
+    static void load_sym(F& func_ptr, std::string_view name, shared_c_api& api)
+    {
+      func_ptr = reinterpret_cast<F>(dlsym(api.m_lib_handle.get(), name.data()));
+
+      if (func_ptr == nullptr) {
+        throw ipasir2_error{"Missing symbol in the IPASIR2 library."};
+      }
+    }
+#endif
+  };
+
+
   inline void throw_if_failed(ipasir2_errorcode errorcode)
   {
     if (errorcode != IPASIR2_E_OK) {
@@ -128,9 +208,6 @@ namespace detail {
 
 class solver {
 public:
-  solver() { detail::throw_if_failed(ipasir2_init(&m_handle)); }
-
-
   /// Adds the literals in [start, stop) as a clause to the solver.
   ///
   /// \tparam Iter This type can be one of:
@@ -142,7 +219,7 @@ public:
   void add_clause(Iter start, Iter stop, ipasir2_redundancy redundancy = IPASIR2_R_NONE)
   {
     auto const& [clause_ptr, clause_len] = detail::as_contiguous(start, stop, m_clause_buf);
-    detail::throw_if_failed(ipasir2_add(m_handle, clause_ptr, clause_len, redundancy));
+    detail::throw_if_failed(m_api.add(m_handle.get(), clause_ptr, clause_len, redundancy));
   }
 
 
@@ -174,7 +251,7 @@ public:
     auto const& [assumptions_ptr, assumptions_len]
         = detail::as_contiguous(assumptions_start, assumptions_stop, m_clause_buf);
     int result = 0;
-    detail::throw_if_failed(ipasir2_solve(m_handle, &result, assumptions_ptr, assumptions_len));
+    detail::throw_if_failed(m_api.solve(m_handle.get(), &result, assumptions_ptr, assumptions_len));
     return detail::to_solve_result(result);
   }
 
@@ -189,7 +266,7 @@ public:
   optional_bool solve()
   {
     int32_t result = 0;
-    detail::throw_if_failed(ipasir2_solve(m_handle, &result, nullptr, 0));
+    detail::throw_if_failed(m_api.solve(m_handle.get(), &result, nullptr, 0));
     return detail::to_solve_result(result);
   }
 
@@ -197,7 +274,7 @@ public:
   optional_bool lit_value(int32_t lit) const
   {
     int32_t result = 0;
-    detail::throw_if_failed(ipasir2_val(m_handle, lit, &result));
+    detail::throw_if_failed(m_api.val(m_handle.get(), lit, &result));
 
     if (result == lit) {
       return optional_bool{true};
@@ -217,7 +294,7 @@ public:
   bool lit_failed(int32_t lit) const
   {
     int32_t result = 0;
-    detail::throw_if_failed(ipasir2_failed(m_handle, lit, &result));
+    detail::throw_if_failed(m_api.failed(m_handle.get(), lit, &result));
 
     if (result != 0 && result != 1) {
       throw ipasir2_error{"Unknown truth value received from solver"};
@@ -225,9 +302,6 @@ public:
 
     return result == 1;
   }
-
-
-  ~solver() { ipasir2_release(m_handle); }
 
 
   // `solver` objects manage IPASIR2 resources. Also, pointers to `solver` objects
@@ -238,24 +312,68 @@ public:
   solver(solver&&) = delete;
   solver& operator=(solver&&) = delete;
 
+
 private:
-  void* m_handle = nullptr;
+  friend class ipasir2;
+
+  static std::unique_ptr<solver> create(detail::shared_c_api const& api)
+  {
+    // std::make_unique can't be used here, since the constructor is private
+    return std::unique_ptr<solver>{new solver(api)};
+  }
+
+
+  explicit solver(detail::shared_c_api const& api) : m_api{api}, m_handle{nullptr, nullptr}
+  {
+    void* handle = nullptr;
+    detail::throw_if_failed(m_api.init(&handle));
+    m_handle = unique_ipasir2_handle{handle, m_api.release};
+  }
+
+  detail::shared_c_api m_api;
+
+  using unique_ipasir2_handle = std::unique_ptr<void, decltype(&ipasir2_release)>;
+  unique_ipasir2_handle m_handle;
   std::vector<int32_t> m_clause_buf;
 };
 
 
 class ipasir2 {
 public:
-  ipasir2() {}
+  template <typename = void /* prevent instantiation unless called */>
+  static ipasir2 create()
+  {
+    // Ideally, this would just be the default constructor of `ipasir2`.
+    // However, clients then would get linker errors if a `ipasir2` object
+    // is accidentally default-constructed and they don't link to IPASIR2
+    // at build time.
+    return ipasir2{detail::shared_c_api::with_linked_syms()};
+  }
 
 
-  std::unique_ptr<solver> create_solver() { return std::make_unique<solver>(); }
+  template <typename = void /* prevent instantiation unless called */>
+  static ipasir2 create(std::filesystem::path const& shared_library)
+  {
+#if defined(IPASIR2CPP_HAS_DLOPEN)
+    return ipasir2{detail::shared_c_api::load(shared_library)};
+#else
+    static_assert("ipasir2cpp.h does not support loading shared libraries at runtime on this "
+                  "platform yet. See the documentation of ipasir2::create_from_api_struct() for a "
+                  "workaround.");
+#endif
+  }
+
+
+  static ipasir2 create_from_api_struct(detail::shared_c_api api) { return ipasir2{api}; }
+
+
+  std::unique_ptr<solver> create_solver() { return solver::create(m_api); }
 
 
   std::string signature() const
   {
     char const* result = nullptr;
-    detail::throw_if_failed(ipasir2_signature(&result));
+    detail::throw_if_failed(m_api.signature(&result));
     return result;
   }
 
@@ -264,6 +382,11 @@ public:
   ipasir2& operator=(ipasir2 const&) = delete;
   ipasir2(ipasir2&&) noexcept = default;
   ipasir2& operator=(ipasir2&&) noexcept = default;
+
+private:
+  explicit ipasir2(detail::shared_c_api const& api) : m_api{api} {}
+
+  detail::shared_c_api m_api;
 };
 
 }

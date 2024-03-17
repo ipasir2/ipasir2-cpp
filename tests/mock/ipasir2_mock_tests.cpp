@@ -1,4 +1,4 @@
-#include "ipasir2_mock.h"
+#include "ipasir2_mock_doctest.h"
 
 #include <vector>
 
@@ -7,7 +7,7 @@
 
 TEST_CASE("Happy-path example")
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   std::vector<void*> solvers{2};
 
   mock->expect_init_call(1);
@@ -37,17 +37,9 @@ TEST_CASE("Happy-path example")
 }
 
 
-TEST_CASE("Test fails if IPASIR2 function is called without a controlling ipasir2_mock_scope"
-          * doctest::should_fail() * doctest::no_output())
-{
-  void* solver = nullptr;
-  ipasir2_init(&solver);
-}
-
-
 TEST_CASE("Test fails on unexpected ipasir2_init()" * doctest::should_fail() * doctest::no_output())
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   void* solver = nullptr;
 
   // The next mock ID has not been set in `mock`, so ipasir2_init() fails.
@@ -58,7 +50,7 @@ TEST_CASE("Test fails on unexpected ipasir2_init()" * doctest::should_fail() * d
 TEST_CASE("Test fails on unexpected subsequent ipasir2_init()" * doctest::should_fail()
           * doctest::no_output())
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   void* solver1 = nullptr;
   void* solver2 = nullptr;
 
@@ -74,7 +66,7 @@ TEST_CASE("Test fails when next instance is expected, but ipasir2_init is not ca
           "is expected"
           * doctest::should_fail() * doctest::no_output())
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   mock->expect_init_call(1);
   mock->expect_init_call(2);
 }
@@ -82,7 +74,7 @@ TEST_CASE("Test fails when next instance is expected, but ipasir2_init is not ca
 
 TEST_CASE("Test fails on unexpected release" * doctest::should_fail() * doctest::no_output())
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   int not_a_solver = 42;
 
   ipasir2_release(&not_a_solver);
@@ -91,7 +83,7 @@ TEST_CASE("Test fails on unexpected release" * doctest::should_fail() * doctest:
 
 TEST_CASE("Test fails on double-release of solvers" * doctest::should_fail() * doctest::no_output())
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   void* solver = nullptr;
 
   mock->expect_init_call(1);
@@ -104,7 +96,7 @@ TEST_CASE("Test fails on double-release of solvers" * doctest::should_fail() * d
 
 TEST_CASE("Mock allows creation and release of single instance")
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   void* solver = nullptr;
 
   mock->expect_init_call(1);
@@ -115,7 +107,7 @@ TEST_CASE("Mock allows creation and release of single instance")
 
 TEST_CASE("Mock allows creation and release of two instances")
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   std::vector<void*> solvers{2};
 
   mock->expect_init_call(1);
@@ -131,7 +123,7 @@ TEST_CASE("Mock allows creation and release of two instances")
 
 TEST_CASE("Mock allows expected ipasir2_add calls")
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   void* solver = nullptr;
 
   mock->expect_init_call(1);
@@ -166,7 +158,7 @@ TEST_CASE("Mock allows expected ipasir2_add calls")
 TEST_CASE("Test fails when ipasir2_add is expected, but a different function is called instead"
           * doctest::should_fail() * doctest::no_output())
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   void* solver = nullptr;
 
   mock->expect_init_call(1);
@@ -185,7 +177,7 @@ TEST_CASE("Test fails when ipasir2_add is expected, but a different function is 
 TEST_CASE("Test fails when ipasir2_add is expected, but the solver is released instead"
           * doctest::should_fail() * doctest::no_output())
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   void* solver = nullptr;
 
   mock->expect_init_call(1);
@@ -200,7 +192,7 @@ TEST_CASE("Test fails when ipasir2_add is expected, but the solver is released i
 
 TEST_CASE("Unreleased instances are detected" * doctest::should_fail() * doctest::no_output())
 {
-  auto mock = create_ipasir2_mock();
+  auto mock = create_ipasir2_doctest_mock();
   std::vector<void*> solvers{2};
 
   CHECK(!mock->has_outstanding_expects());

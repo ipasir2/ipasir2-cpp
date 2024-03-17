@@ -1,13 +1,13 @@
 #include "ipasir2_mock.h"
 
 #include <algorithm>
+#include <exception>
 #include <functional>
+#include <iostream>
 #include <optional>
 #include <queue>
 #include <string_view>
 #include <unordered_map>
-
-#include <doctest.h>
 
 
 class ipasir2_mock_impl;
@@ -45,6 +45,12 @@ public:
 
 
   virtual ~ipasir2_mock_impl() { s_current_mock = nullptr; }
+
+
+  void set_fail_observer(std::function<void(std::string_view)> const& callback) override
+  {
+    m_fail_observer = callback;
+  }
 
 
   void expect_call(instance_id instance_id, any_call const& call) override
@@ -189,6 +195,9 @@ public:
   }
 
 
+  void fail_test(std::string_view message) { m_fail_observer(message); }
+
+
 private:
   std::unordered_map<instance_id, mock_solver_instance> m_instances;
 
@@ -197,12 +206,19 @@ private:
 
   std::string m_signature;
   std::optional<ipasir2_errorcode> m_signature_result;
+
+  std::function<void(std::string_view)> m_fail_observer;
 };
 
 
-std::unique_ptr<ipasir2_mock> create_ipasir2_mock()
+ipasir2_mock* new_ipasir2_mock()
 {
-  return std::make_unique<ipasir2_mock_impl>();
+  return new ipasir2_mock_impl();
+}
+
+void delete_ipasir2_mock(ipasir2_mock const* mock)
+{
+  delete mock;
 }
 
 
@@ -215,9 +231,16 @@ void throw_if_current_mock_is_null()
   }
 }
 
+
 void fail_test(std::string_view message)
 {
-  FAIL(message);
+  if (s_current_mock == nullptr) {
+    std::cerr << message << std::endl;
+    std::terminate();
+  }
+  else {
+    s_current_mock->fail_test(message);
+  }
 }
 }
 

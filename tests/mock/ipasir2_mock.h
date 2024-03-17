@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string_view>
@@ -52,6 +53,16 @@ public:
   ipasir2_mock() = default;
   virtual ~ipasir2_mock() = default;
 
+  /// Callback that is called when the IPASIR2 functions are called in
+  /// some unexpected fashion (wrong order, wrong arguments, missing calls)
+  ///
+  /// The callback is supposed to call doctest's FAIL(). This cannot be done
+  /// inside the mock, since the mock is compiled as a shared library (this,
+  /// again, is used for testing the load-at-runtime behavior of the IPASIR2
+  /// wrapper) and that in turn causes obscure symbol lookup problems when
+  /// loading the mock library via dlopen().
+  virtual void set_fail_observer(std::function<void(std::string_view)> const& callback) = 0;
+
   virtual void expect_init_call(instance_id instance_id) = 0;
   virtual void expect_init_call_and_fail(ipasir2_errorcode result) = 0;
 
@@ -69,4 +80,7 @@ public:
 };
 
 
-std::unique_ptr<ipasir2_mock> create_ipasir2_mock();
+extern "C" {
+ipasir2_mock* new_ipasir2_mock();
+void delete_ipasir2_mock(ipasir2_mock const* mock);
+}

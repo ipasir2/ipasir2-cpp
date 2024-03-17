@@ -1,6 +1,6 @@
 #include <ipasir2cpp.h>
 
-#include "mock/ipasir2_mock.h"
+#include "mock/ipasir2_mock_doctest.h"
 
 #include <doctest.h>
 
@@ -9,8 +9,8 @@ using ip2::optional_bool;
 
 TEST_CASE("solver::lit_value()")
 {
-  auto mock = create_ipasir2_mock();
-  ip2::ipasir2 api;
+  auto mock = create_ipasir2_doctest_mock();
+  ip2::ipasir2 api = ip2::ipasir2::create();
 
 
   SUBCASE("Successfully query truth value of a literal")
@@ -55,8 +55,8 @@ TEST_CASE("solver::lit_value()")
 
 TEST_CASE("solver::lit_failed()")
 {
-  auto mock = create_ipasir2_mock();
-  ip2::ipasir2 api;
+  auto mock = create_ipasir2_doctest_mock();
+  ip2::ipasir2 api = ip2::ipasir2::create();
 
 
   SUBCASE("Successfully query if a literal is failed")
