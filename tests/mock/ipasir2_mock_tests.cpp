@@ -10,10 +10,10 @@ TEST_CASE("Happy-path example")
   auto mock = create_ipasir2_mock();
   std::vector<void*> solvers{2};
 
-  mock->expect_new_instance(1);
+  mock->expect_init_call(1);
   REQUIRE_EQ(ipasir2_init(&solvers[0]), IPASIR2_E_OK);
 
-  mock->expect_new_instance(2);
+  mock->expect_init_call(2);
   REQUIRE_EQ(ipasir2_init(&solvers[1]), IPASIR2_E_OK);
 
   std::vector<std::vector<int32_t>> clauses = {{1, 2, -3}, {4, -5}, {-4}};
@@ -62,7 +62,7 @@ TEST_CASE("Test fails on unexpected subsequent ipasir2_init()" * doctest::should
   void* solver1 = nullptr;
   void* solver2 = nullptr;
 
-  mock->expect_new_instance(1);
+  mock->expect_init_call(1);
   ipasir2_init(&solver1);
 
   // Only one mock ID has not been set in `mock`, so ipasir2_init() fails.
@@ -75,8 +75,8 @@ TEST_CASE("Test fails when next instance is expected, but ipasir2_init is not ca
           * doctest::should_fail() * doctest::no_output())
 {
   auto mock = create_ipasir2_mock();
-  mock->expect_new_instance(1);
-  mock->expect_new_instance(2);
+  mock->expect_init_call(1);
+  mock->expect_init_call(2);
 }
 
 
@@ -94,7 +94,7 @@ TEST_CASE("Test fails on double-release of solvers" * doctest::should_fail() * d
   auto mock = create_ipasir2_mock();
   void* solver = nullptr;
 
-  mock->expect_new_instance(1);
+  mock->expect_init_call(1);
   ipasir2_init(&solver);
 
   ipasir2_release(solver);
@@ -107,7 +107,7 @@ TEST_CASE("Mock allows creation and release of single instance")
   auto mock = create_ipasir2_mock();
   void* solver = nullptr;
 
-  mock->expect_new_instance(1);
+  mock->expect_init_call(1);
   REQUIRE_EQ(ipasir2_init(&solver), IPASIR2_E_OK);
   REQUIRE_EQ(ipasir2_release(solver), IPASIR2_E_OK);
 }
@@ -118,10 +118,10 @@ TEST_CASE("Mock allows creation and release of two instances")
   auto mock = create_ipasir2_mock();
   std::vector<void*> solvers{2};
 
-  mock->expect_new_instance(1);
+  mock->expect_init_call(1);
   REQUIRE_EQ(ipasir2_init(&solvers[1]), IPASIR2_E_OK);
 
-  mock->expect_new_instance(2);
+  mock->expect_init_call(2);
   REQUIRE_EQ(ipasir2_init(&solvers[2]), IPASIR2_E_OK);
 
   REQUIRE_EQ(ipasir2_release(solvers[1]), IPASIR2_E_OK);
@@ -134,7 +134,7 @@ TEST_CASE("Mock allows expected ipasir2_add calls")
   auto mock = create_ipasir2_mock();
   void* solver = nullptr;
 
-  mock->expect_new_instance(1);
+  mock->expect_init_call(1);
   REQUIRE_EQ(ipasir2_init(&solver), IPASIR2_E_OK);
 
   std::vector<std::vector<int32_t>> clauses = {{1, 2, -3}, {4, -5}};
@@ -169,7 +169,7 @@ TEST_CASE("Test fails when ipasir2_add is expected, but a different function is 
   auto mock = create_ipasir2_mock();
   void* solver = nullptr;
 
-  mock->expect_new_instance(1);
+  mock->expect_init_call(1);
   REQUIRE_EQ(ipasir2_init(&solver), IPASIR2_E_OK);
 
   std::vector<int32_t> clause = {1, 2, -3};
@@ -188,7 +188,7 @@ TEST_CASE("Test fails when ipasir2_add is expected, but the solver is released i
   auto mock = create_ipasir2_mock();
   void* solver = nullptr;
 
-  mock->expect_new_instance(1);
+  mock->expect_init_call(1);
   REQUIRE_EQ(ipasir2_init(&solver), IPASIR2_E_OK);
 
   std::vector<int32_t> clause = {1, 2, -3};
@@ -198,14 +198,13 @@ TEST_CASE("Test fails when ipasir2_add is expected, but the solver is released i
 }
 
 
-TEST_CASE("Unreleased instances are detected"
-          * doctest::should_fail() * doctest::no_output())
+TEST_CASE("Unreleased instances are detected" * doctest::should_fail() * doctest::no_output())
 {
   auto mock = create_ipasir2_mock();
   std::vector<void*> solvers{2};
 
   CHECK(!mock->has_outstanding_expects());
-  mock->expect_new_instance(1);
+  mock->expect_init_call(1);
   CHECK(mock->has_outstanding_expects());
 
   ipasir2_init(&solvers[0]);

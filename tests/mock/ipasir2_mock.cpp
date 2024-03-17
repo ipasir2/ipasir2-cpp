@@ -52,7 +52,7 @@ public:
   }
 
 
-  void expect_new_instance(instance_id instance_id) override
+  void expect_init_call(instance_id instance_id) override
   {
     if (m_next_init_call.has_value()) {
       throw ipasir2_mock_error{"A new instance ID has been set by the test, but ipasir2_init() has "
@@ -67,7 +67,7 @@ public:
   }
 
 
-  void expect_new_instance_and_fail(ipasir2_errorcode result) override
+  void expect_init_call_and_fail(ipasir2_errorcode result) override
   {
     m_next_init_call = next_init_call{std::nullopt, result};
   }

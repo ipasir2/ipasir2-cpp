@@ -37,14 +37,14 @@ TEST_CASE("Instantiate solver")
 
   SUBCASE("Successfully instantiate solver")
   {
-    mock->expect_new_instance(1);
+    mock->expect_init_call(1);
     api.create_solver();
   }
 
 
   SUBCASE("Throws when creating instance fails")
   {
-    mock->expect_new_instance_and_fail(IPASIR2_E_UNKNOWN);
+    mock->expect_init_call_and_fail(IPASIR2_E_UNKNOWN);
     CHECK_THROWS_AS(api.create_solver(), ip2::ipasir2_error const&);
   }
 
