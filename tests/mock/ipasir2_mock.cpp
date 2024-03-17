@@ -86,8 +86,9 @@ public:
       return true;
     }
 
-    return std::ranges::any_of(m_instances,
-                               [](auto const& instance) { return !instance.second.is_released; });
+    return std::any_of(m_instances.begin(), m_instances.end(), [](auto const& instance) {
+      return !instance.second.is_released;
+    });
   }
 
 
