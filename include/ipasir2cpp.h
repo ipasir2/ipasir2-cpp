@@ -131,6 +131,13 @@ public:
   solver() { detail::throw_if_failed(ipasir2_init(&m_handle)); }
 
 
+  /// Adds the literals in [start, stop) as a clause to the solver.
+  ///
+  /// \tparam Iter This type can be one of:
+  ///               - iterator type with values convertible to `int32_t`
+  ///               - pointer type which is convertible to `int32_t const*`
+  ///
+  /// \throws `ipasir2_error` if the implementation indicated an error.
   template <typename Iter>
   void add_clause(Iter start, Iter stop, ipasir2_redundancy redundancy = IPASIR2_R_NONE)
   {
@@ -139,6 +146,21 @@ public:
   }
 
 
+  /// Adds a clause to the solver.
+  ///
+  /// For example, this function can be used to add literals stored in a `std::vector<int32_t>`,
+  /// or in a custom clause type (see requirements below).
+  ///
+  /// NB: For custom clause types, performance can be gained when the iterator type satisfies
+  /// `std::contiguous_iterator` and C++20 is used. The IPASIR2 wrapper will then directly pass
+  /// the buffer to the solver. For C++17 and earlier, the clause is copied unless `LitContainer`
+  /// is a `std::vector`, or has pointer-type iterators.
+  ///
+  /// \tparam LitContainer A type with `begin()` and `end()` methods returning either
+  ///                       - iterators with values convertible to `int32_t`
+  ///                       - pointers convertible to `int32_t const*`.
+  ///
+  /// \throws `ipasir2_error` if the implementation indicated an error.
   template <typename LitContainer>
   void add_clause(LitContainer const& container, ipasir2_redundancy redundancy = IPASIR2_R_NONE)
   {
