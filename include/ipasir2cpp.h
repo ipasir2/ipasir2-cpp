@@ -230,6 +230,9 @@ public:
   ~solver() { ipasir2_release(m_handle); }
 
 
+  // `solver` objects manage IPASIR2 resources. Also, pointers to `solver` objects
+  // are passed to IPASIR2 solvers as cookies for callbacks. Hence, both copy and
+  // move operations are deleted for `solver`.
   solver(solver const&) = delete;
   solver& operator=(solver const&) = delete;
   solver(solver&&) = delete;
