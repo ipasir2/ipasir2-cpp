@@ -137,7 +137,7 @@ public:
   ///               - iterator type with values convertible to `int32_t`
   ///               - pointer type which is convertible to `int32_t const*`
   ///
-  /// \throws `ipasir2_error` if the implementation indicated an error.
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename Iter>
   void add_clause(Iter start, Iter stop, ipasir2_redundancy redundancy = IPASIR2_R_NONE)
   {
@@ -160,7 +160,7 @@ public:
   ///                       - iterators with values convertible to `int32_t`
   ///                       - pointers convertible to `int32_t const*`.
   ///
-  /// \throws `ipasir2_error` if the implementation indicated an error.
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename LitContainer>
   void add_clause(LitContainer const& container, ipasir2_redundancy redundancy = IPASIR2_R_NONE)
   {
@@ -232,7 +232,7 @@ public:
 
   // `solver` objects manage IPASIR2 resources. Also, pointers to `solver` objects
   // are passed to IPASIR2 solvers as cookies for callbacks. Hence, both copy and
-  // move operations are deleted for `solver`.
+  // move operators are deleted for `solver`.
   solver(solver const&) = delete;
   solver& operator=(solver const&) = delete;
   solver(solver&&) = delete;
