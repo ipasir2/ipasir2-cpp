@@ -39,11 +39,14 @@ public:
   virtual ~ipasir2_mock() = default;
 
   virtual void expect_new_instance(instance_id instance_id) = 0;
+  virtual void expect_new_instance_and_fail(ipasir2_errorcode result) = 0;
 
   using any_call = std::variant<add_call, solve_call>;
   virtual void expect_call(instance_id instance_id, any_call const& call) = 0;
 
   virtual void set_signature(std::string_view signature, ipasir2_errorcode result) = 0;
+
+  virtual bool has_outstanding_expects() const = 0;
 
   ipasir2_mock(ipasir2_mock const&) = delete;
   ipasir2_mock(ipasir2_mock&&) = delete;

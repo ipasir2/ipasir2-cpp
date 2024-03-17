@@ -1,5 +1,6 @@
 #include "ipasir2_mock.h"
 
+#include <algorithm>
 #include <optional>
 #include <queue>
 #include <string_view>
@@ -21,6 +22,12 @@ struct mock_solver_instance {
   bool is_initialized = false;
   bool is_released = false;
   std::queue<ipasir2_mock::any_call> expected_calls;
+};
+
+
+struct next_init_call {
+  std::optional<instance_id> id;
+  ipasir2_errorcode return_value = IPASIR2_E_OK;
 };
 
 
@@ -47,7 +54,7 @@ public:
 
   void expect_new_instance(instance_id instance_id) override
   {
-    if (m_next_instance_id.has_value()) {
+    if (m_next_init_call.has_value()) {
       throw ipasir2_mock_error{"A new instance ID has been set by the test, but ipasir2_init() has "
                                "not been called since setting the previous ID"};
     }
@@ -56,7 +63,13 @@ public:
       throw ipasir2_mock_error{"Test setup failed: the instance ID has already been used"};
     }
 
-    m_next_instance_id = instance_id;
+    m_next_init_call = next_init_call{instance_id, IPASIR2_E_OK};
+  }
+
+
+  void expect_new_instance_and_fail(ipasir2_errorcode result) override
+  {
+    m_next_init_call = next_init_call{std::nullopt, result};
   }
 
 
@@ -64,6 +77,17 @@ public:
   {
     m_signature = signature;
     m_signature_result = result;
+  }
+
+
+  bool has_outstanding_expects() const override
+  {
+    if (m_next_init_call.has_value()) {
+      return true;
+    }
+
+    return std::ranges::any_of(m_instances,
+                               [](auto const& instance) { return !instance.second.is_released; });
   }
 
 
@@ -104,15 +128,14 @@ public:
   }
 
 
-  instance_id get_next_instance_id()
+  next_init_call pop_next_instance_id()
   {
-    if (!m_next_instance_id.has_value()) {
-      throw ipasir2_mock_error{
-          "ipasir2_init() has been created unexpectedly, no instance ID has been set"};
+    if (!m_next_init_call.has_value()) {
+      throw ipasir2_mock_error{"ipasir2_init() has been called unexpectedly"};
     }
 
-    instance_id result = *m_next_instance_id;
-    m_next_instance_id.reset();
+    next_init_call result = *m_next_init_call;
+    m_next_init_call.reset();
     return result;
   }
 
@@ -166,7 +189,8 @@ public:
 
 private:
   std::unordered_map<instance_id, mock_solver_instance> m_instances;
-  std::optional<instance_id> m_next_instance_id;
+
+  std::optional<next_init_call> m_next_init_call;
   std::vector<ipasir2_mock_error> m_mock_errors;
 
   std::string m_signature;
@@ -215,10 +239,14 @@ ipasir2_errorcode ipasir2_init(void** result)
 {
   try {
     throw_if_current_mock_is_null();
-    instance_id next = s_current_mock->get_next_instance_id();
-    s_current_mock->change_aliveness(next, true);
-    *result = reinterpret_cast<void*>(next);
-    return IPASIR2_E_OK;
+    next_init_call next = s_current_mock->pop_next_instance_id();
+
+    if (next.id.has_value()) {
+      s_current_mock->change_aliveness(*next.id, true);
+      *result = reinterpret_cast<void*>(*next.id);
+    }
+
+    return next.return_value;
   }
   catch (ipasir2_mock_error const& error) {
     fail_test(error.what());

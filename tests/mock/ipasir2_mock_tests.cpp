@@ -196,3 +196,24 @@ TEST_CASE("Test fails when ipasir2_add is expected, but the solver is released i
   mock->expect_call(1, add_call{clause, IPASIR2_R_NONE, IPASIR2_E_OK});
   ipasir2_release(solver);
 }
+
+
+TEST_CASE("Unreleased instances are detected"
+          * doctest::should_fail() * doctest::no_output())
+{
+  auto mock = create_ipasir2_mock();
+  std::vector<void*> solvers{2};
+
+  CHECK(!mock->has_outstanding_expects());
+  mock->expect_new_instance(1);
+  CHECK(mock->has_outstanding_expects());
+
+  ipasir2_init(&solvers[0]);
+  ipasir2_init(&solvers[1]);
+  CHECK(mock->has_outstanding_expects());
+
+  ipasir2_release(solvers[0]);
+  CHECK(mock->has_outstanding_expects());
+  ipasir2_release(solvers[1]);
+  CHECK(!mock->has_outstanding_expects());
+}

@@ -24,4 +24,29 @@ TEST_CASE("Query signature")
     mock->set_signature("", IPASIR2_E_UNSUPPORTED);
     CHECK_THROWS_AS(api.signature(), ip2::ipasir2_error const&);
   }
+
+  CHECK(!mock->has_outstanding_expects());
+}
+
+
+TEST_CASE("Instantiate solver")
+{
+  auto mock = create_ipasir2_mock();
+  ip2::ipasir2 api;
+
+
+  SUBCASE("Successfully instantiate solver")
+  {
+    mock->expect_new_instance(1);
+    api.create_solver();
+  }
+
+
+  SUBCASE("Throws when creating instance fails")
+  {
+    mock->expect_new_instance_and_fail(IPASIR2_E_UNKNOWN);
+    CHECK_THROWS_AS(api.create_solver(), ip2::ipasir2_error const&);
+  }
+
+  CHECK(!mock->has_outstanding_expects());
 }
