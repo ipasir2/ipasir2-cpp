@@ -1,6 +1,7 @@
 #include "ipasir2_mock.h"
 
 #include <algorithm>
+#include <functional>
 #include <optional>
 #include <queue>
 #include <string_view>
@@ -277,14 +278,31 @@ ipasir2_errorcode ipasir2_release(void* solver)
 }
 
 
+namespace {
+template <typename CallType>
 ipasir2_errorcode
-ipasir2_add(void* solver, int32_t const* clause, int32_t len, ipasir2_redundancy redundancy)
+check_ipasir2_call(void* solver,
+                   std::function<ipasir2_errorcode(CallType const& spec)> check_function)
 {
   try {
     throw_if_current_mock_is_null();
     instance_id instance = reinterpret_cast<instance_id>(solver);
-    add_call spec = s_current_mock->pop_current_expected_call<add_call>(instance);
+    CallType spec = s_current_mock->pop_current_expected_call<CallType>(instance);
 
+    return check_function(spec);
+  }
+  catch (ipasir2_mock_error const& error) {
+    fail_test(error.what());
+    return IPASIR2_E_UNKNOWN;
+  }
+}
+}
+
+
+ipasir2_errorcode
+ipasir2_add(void* solver, int32_t const* clause, int32_t len, ipasir2_redundancy redundancy)
+{
+  return check_ipasir2_call<add_call>(solver, [&](add_call const& spec) {
     std::vector<int> actual_clause{clause, clause + len};
     if (spec.clause != actual_clause) {
       throw ipasir2_mock_error{"ipasir2_add(): unexpected clause"};
@@ -295,21 +313,13 @@ ipasir2_add(void* solver, int32_t const* clause, int32_t len, ipasir2_redundancy
     }
 
     return spec.return_value;
-  }
-  catch (ipasir2_mock_error const& error) {
-    fail_test(error.what());
-    return IPASIR2_E_UNKNOWN;
-  }
+  });
 }
 
 
 ipasir2_errorcode ipasir2_solve(void* solver, int* result, int32_t const* assumptions, int32_t len)
 {
-  try {
-    throw_if_current_mock_is_null();
-    instance_id instance = reinterpret_cast<instance_id>(solver);
-    solve_call spec = s_current_mock->pop_current_expected_call<solve_call>(instance);
-
+  return check_ipasir2_call<solve_call>(solver, [&](solve_call const& spec) {
     std::vector<int> actual_assumptions{assumptions, assumptions + len};
     if (spec.assumptions != actual_assumptions) {
       throw ipasir2_mock_error{"ipasir2_solve(): unexpected assumptions"};
@@ -317,51 +327,31 @@ ipasir2_errorcode ipasir2_solve(void* solver, int* result, int32_t const* assump
 
     *result = spec.result;
     return spec.return_value;
-  }
-  catch (ipasir2_mock_error const& error) {
-    fail_test(error.what());
-    return IPASIR2_E_UNKNOWN;
-  }
+  });
 }
 
 
 ipasir2_errorcode ipasir2_val(void* solver, int32_t lit, int32_t* result)
 {
-  try {
-    throw_if_current_mock_is_null();
-    instance_id instance = reinterpret_cast<instance_id>(solver);
-    val_call spec = s_current_mock->pop_current_expected_call<val_call>(instance);
-
+  return check_ipasir2_call<val_call>(solver, [&](val_call const& spec) {
     if (spec.lit != lit) {
       throw ipasir2_mock_error{"ipasir2_val(): unexpected literal"};
     }
 
     *result = spec.result;
     return spec.return_value;
-  }
-  catch (ipasir2_mock_error const& error) {
-    fail_test(error.what());
-    return IPASIR2_E_UNKNOWN;
-  }
+  });
 }
 
 
 ipasir2_errorcode ipasir2_failed(void* solver, int32_t lit, int32_t* result)
 {
-  try {
-    throw_if_current_mock_is_null();
-    instance_id instance = reinterpret_cast<instance_id>(solver);
-    failed_call spec = s_current_mock->pop_current_expected_call<failed_call>(instance);
-
+  return check_ipasir2_call<failed_call>(solver, [&](failed_call const& spec) {
     if (spec.lit != lit) {
       throw ipasir2_mock_error{"ipasir2_failed(): unexpected literal"};
     }
 
     *result = spec.result;
     return spec.return_value;
-  }
-  catch (ipasir2_mock_error const& error) {
-    fail_test(error.what());
-    return IPASIR2_E_UNKNOWN;
-  }
+  });
 }
