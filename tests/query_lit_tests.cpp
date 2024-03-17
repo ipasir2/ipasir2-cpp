@@ -5,14 +5,12 @@
 #include <doctest.h>
 
 namespace ip2 = ipasir2;
+using ip2::optional_bool;
 
 TEST_CASE("solver::lit_value()")
 {
   auto mock = create_ipasir2_mock();
   ip2::ipasir2 api;
-  std::vector<int32_t> assumptions = {1, -2, 3};
-
-  using ip2::optional_bool;
 
 
   SUBCASE("Successfully query truth value of a literal")
@@ -34,10 +32,10 @@ TEST_CASE("solver::lit_value()")
   SUBCASE("Throws when solver indicates error")
   {
     mock->expect_init_call(1);
-    mock->expect_call(1, val_call{13, 13, IPASIR2_E_INVALID_ARGUMENT});
+    mock->expect_call(1, val_call{2, 2, IPASIR2_E_INVALID_ARGUMENT});
 
     auto solver = api.create_solver();
-    CHECK_THROWS_AS(solver->lit_value(13), ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->lit_value(2), ip2::ipasir2_error const&);
   }
 
 
@@ -48,6 +46,50 @@ TEST_CASE("solver::lit_value()")
 
     auto solver = api.create_solver();
     CHECK_THROWS_AS(solver->lit_value(13), ip2::ipasir2_error const&);
+  }
+
+
+  CHECK(!mock->has_outstanding_expects());
+}
+
+
+TEST_CASE("solver::lit_failed()")
+{
+  auto mock = create_ipasir2_mock();
+  ip2::ipasir2 api;
+
+
+  SUBCASE("Successfully query if a literal is failed")
+  {
+    mock->expect_init_call(1);
+    mock->expect_call(1, failed_call{2, 1, IPASIR2_E_OK});
+    mock->expect_call(1, failed_call{-1, 0, IPASIR2_E_OK});
+
+    auto solver = api.create_solver();
+    CHECK(solver->lit_failed(2));
+    CHECK_FALSE(solver->lit_failed(-1));
+  }
+
+
+  SUBCASE("Throws when solver indicates error")
+  {
+    mock->expect_init_call(1);
+    mock->expect_call(1, failed_call{2, 0, IPASIR2_E_INVALID_ARGUMENT});
+
+    auto solver = api.create_solver();
+    CHECK_THROWS_AS(solver->lit_failed(2), ip2::ipasir2_error const&);
+  }
+
+
+  SUBCASE("Throws when solver returns invalid value")
+  {
+    mock->expect_init_call(1);
+    mock->expect_call(1, failed_call{13, -1, IPASIR2_E_OK});
+    mock->expect_call(1, failed_call{13, 2, IPASIR2_E_OK});
+
+    auto solver = api.create_solver();
+    CHECK_THROWS_AS(solver->lit_failed(13), ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->lit_failed(13), ip2::ipasir2_error const&);
   }
 
 

@@ -31,6 +31,13 @@ struct val_call {
 };
 
 
+struct failed_call {
+  int32_t lit = 0;
+  int32_t result = 0;
+  ipasir2_errorcode return_value = IPASIR2_E_OK;
+};
+
+
 class ipasir2_mock_error : public std::logic_error {
 public:
   explicit ipasir2_mock_error(std::string_view message);
@@ -48,7 +55,7 @@ public:
   virtual void expect_init_call(instance_id instance_id) = 0;
   virtual void expect_init_call_and_fail(ipasir2_errorcode result) = 0;
 
-  using any_call = std::variant<add_call, solve_call, val_call>;
+  using any_call = std::variant<add_call, solve_call, val_call, failed_call>;
   virtual void expect_call(instance_id instance_id, any_call const& call) = 0;
 
   virtual void set_signature(std::string_view signature, ipasir2_errorcode result) = 0;

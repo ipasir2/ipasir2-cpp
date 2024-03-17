@@ -16,14 +16,13 @@
 #include <doctest.h>
 
 namespace ip2 = ipasir2;
+using ip2::optional_bool;
 
 TEST_CASE("solver::solve() functions")
 {
   auto mock = create_ipasir2_mock();
   ip2::ipasir2 api;
   std::vector<int32_t> assumptions = {1, -2, 3};
-
-  using ip2::optional_bool;
 
 
   SUBCASE("Successfully solve without assumptions")

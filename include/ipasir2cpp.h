@@ -192,6 +192,19 @@ public:
   }
 
 
+  bool lit_failed(int32_t lit) const
+  {
+    int32_t result = 0;
+    detail::throw_if_failed(ipasir2_failed(m_handle, lit, &result));
+
+    if (result != 0 && result != 1) {
+      throw ipasir2_error{"Unknown truth value received from solver"};
+    }
+
+    return result == 1;
+  }
+
+
   ~solver() { ipasir2_release(m_handle); }
 
 
