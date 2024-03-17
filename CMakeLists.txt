@@ -6,6 +6,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+add_library(ipasir2cpp INTERFACE)
+target_include_directories(ipasir2cpp INTERFACE include)
+
 add_subdirectory(testdeps)
 add_subdirectory(tests)
 
