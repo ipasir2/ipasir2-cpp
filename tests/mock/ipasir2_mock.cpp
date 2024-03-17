@@ -312,7 +312,7 @@ ipasir2_errorcode ipasir2_solve(void* solver, int* result, int32_t const* assump
 
     std::vector<int> actual_assumptions{assumptions, assumptions + len};
     if (spec.assumptions != actual_assumptions) {
-      throw ipasir2_mock_error{"ipasir2_add(): unexpected clause"};
+      throw ipasir2_mock_error{"ipasir2_solve(): unexpected assumptions"};
     }
 
     *result = spec.result;
