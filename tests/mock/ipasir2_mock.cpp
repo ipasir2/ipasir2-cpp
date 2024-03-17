@@ -323,3 +323,24 @@ ipasir2_errorcode ipasir2_solve(void* solver, int* result, int32_t const* assump
     return IPASIR2_E_UNKNOWN;
   }
 }
+
+
+ipasir2_errorcode ipasir2_val(void* solver, int32_t lit, int32_t* result)
+{
+  try {
+    throw_if_current_mock_is_null();
+    instance_id instance = reinterpret_cast<instance_id>(solver);
+    val_call spec = s_current_mock->pop_current_expected_call<val_call>(instance);
+
+    if (spec.lit != lit) {
+      throw ipasir2_mock_error{"ipasir2_val(): unexpected literal"};
+    }
+
+    *result = spec.result;
+    return spec.return_value;
+  }
+  catch (ipasir2_mock_error const& error) {
+    fail_test(error.what());
+    return IPASIR2_E_UNKNOWN;
+  }
+}

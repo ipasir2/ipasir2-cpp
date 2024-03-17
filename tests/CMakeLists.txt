@@ -4,6 +4,7 @@ set(sources
 
   add_clause_tests.cpp
   detail_tests.cpp
+  query_lit_tests.cpp
   solve_tests.cpp
   test_main.cpp
   tests.cpp

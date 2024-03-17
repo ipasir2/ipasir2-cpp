@@ -11,6 +11,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -25,6 +26,7 @@ namespace ipasir2 {
 class ipasir2_error : public std::runtime_error {
 public:
   explicit ipasir2_error(ipasir2_errorcode) : runtime_error("IPASIR2 call failed"){};
+  explicit ipasir2_error(std::string_view message) : runtime_error(message.data()){};
 };
 
 
@@ -167,6 +169,26 @@ public:
     int32_t result = 0;
     detail::throw_if_failed(ipasir2_solve(m_handle, &result, nullptr, 0));
     return detail::to_solve_result(result);
+  }
+
+
+  optional_bool lit_value(int32_t lit) const
+  {
+    int32_t result = 0;
+    detail::throw_if_failed(ipasir2_val(m_handle, lit, &result));
+
+    if (result == lit) {
+      return optional_bool{true};
+    }
+    else if (result == -lit) {
+      return optional_bool{false};
+    }
+    else if (result == 0) {
+      return optional_bool{};
+    }
+    else {
+      throw ipasir2_error{"Unknown truth value received from solver"};
+    }
   }
 
 
