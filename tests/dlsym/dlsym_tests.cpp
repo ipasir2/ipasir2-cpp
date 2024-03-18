@@ -13,16 +13,20 @@
 
 namespace ip2 = ipasir2;
 
+/// Class for managing the IPASIR2 mock library loaded at runtime
 class mock_lib {
 public:
+  // The deleter type is spelled out explicitly, because gcc warns about ignored
+  // attributes if decltype(&dlerror) is used instead
+  using unique_lib_handle = std::unique_ptr<void, int (*)(void*)>;
+
   explicit mock_lib(std::filesystem::path const& path) : m_lib{nullptr, nullptr}
   {
-    void* lib_handle = dlopen(path.c_str(), RTLD_NOW);
-    if (lib_handle == nullptr) {
+    m_lib = unique_lib_handle{dlopen(path.c_str(), RTLD_NOW), dlclose};
+    if (m_lib == nullptr) {
       throw std::runtime_error{dlerror()};
     }
 
-    m_lib = std::unique_ptr<void, decltype(&dlclose)>{lib_handle, dlclose};
     m_new_fn = reinterpret_cast<new_fn>(dlsym(m_lib.get(), "new_ipasir2_mock"));
     m_delete_fn = reinterpret_cast<delete_fn>(dlsym(m_lib.get(), "delete_ipasir2_mock"));
 
@@ -48,15 +52,17 @@ public:
 private:
   new_fn m_new_fn = nullptr;
   delete_fn m_delete_fn = nullptr;
-  std::unique_ptr<void, decltype(&dlclose)> m_lib;
+  unique_lib_handle m_lib;
 };
 
 
 TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
 {
-  mock_lib mock_shared_obj{"./libipasir2mock.so"};
+  std::filesystem::path const library_file = "./libipasir2mock.so";
+  mock_lib mock_shared_obj{library_file};
   auto mock = mock_shared_obj.create_ipasir2_mock();
-  ip2::ipasir2 api = ip2::ipasir2::create("libipasir2mock.so");
+
+  ip2::ipasir2 api = ip2::ipasir2::create(library_file);
 
   using opt_bool = ip2::optional_bool;
 
