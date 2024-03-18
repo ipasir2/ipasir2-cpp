@@ -206,6 +206,14 @@ namespace detail {
 }
 
 
+enum class redundancy {
+  none = IPASIR2_R_NONE,
+  forgettable = IPASIR2_R_FORGETTABLE,
+  equisatisfiable = IPASIR2_R_EQUISATISFIABLE,
+  equivalent = IPASIR2_R_EQUIVALENT
+};
+
+
 class solver {
 public:
   /// Adds the literals in [start, stop) as a clause to the solver.
@@ -216,10 +224,11 @@ public:
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename Iter>
-  void add_clause(Iter start, Iter stop, ipasir2_redundancy redundancy = IPASIR2_R_NONE)
+  void add_clause(Iter start, Iter stop, redundancy red = redundancy::none)
   {
     auto const& [clause_ptr, clause_len] = detail::as_contiguous(start, stop, m_clause_buf);
-    detail::throw_if_failed(m_api.add(m_handle.get(), clause_ptr, clause_len, redundancy));
+    ipasir2_redundancy c_redundancy = static_cast<ipasir2_redundancy>(red);
+    detail::throw_if_failed(m_api.add(m_handle.get(), clause_ptr, clause_len, c_redundancy));
   }
 
 
@@ -239,9 +248,9 @@ public:
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename LitContainer>
-  void add_clause(LitContainer const& container, ipasir2_redundancy redundancy = IPASIR2_R_NONE)
+  void add_clause(LitContainer const& container, redundancy red = redundancy::none)
   {
-    add_clause(container.begin(), container.end(), redundancy);
+    add_clause(container.begin(), container.end(), red);
   }
 
 

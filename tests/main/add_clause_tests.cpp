@@ -32,7 +32,7 @@ TEST_CASE("solver::add_clause() functions")
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_FORGETTABLE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add_clause(clause_3lits, IPASIR2_R_FORGETTABLE);
+    solver->add_clause(clause_3lits, ipasir2::redundancy::forgettable);
   }
 
 
@@ -91,7 +91,7 @@ TEST_CASE("solver::add_clause() functions")
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_FORGETTABLE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add_clause(clause_3lits.begin(), clause_3lits.end(), IPASIR2_R_FORGETTABLE);
+    solver->add_clause(clause_3lits.begin(), clause_3lits.end(), ipasir2::redundancy::forgettable);
   }
 
   CHECK(!mock->has_outstanding_expects());
