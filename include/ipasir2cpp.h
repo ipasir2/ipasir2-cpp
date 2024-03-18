@@ -232,7 +232,7 @@ public:
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename Iter, typename = detail::enable_unless_integral_t<Iter>>
-  void add_clause(Iter start, Iter stop, redundancy red = redundancy::none)
+  void add(Iter start, Iter stop, redundancy red = redundancy::none)
   {
     auto const& [clause_ptr, clause_len] = detail::as_contiguous(start, stop, m_clause_buf);
     ipasir2_redundancy c_redundancy = static_cast<ipasir2_redundancy>(red);
@@ -256,17 +256,17 @@ public:
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename LitContainer>
-  void add_clause(LitContainer const& container, redundancy red = redundancy::none)
+  void add(LitContainer const& container, redundancy red = redundancy::none)
   {
-    add_clause(container.begin(), container.end(), red);
+    add(container.begin(), container.end(), red);
   }
 
 
   template <typename... Ints, typename = detail::enable_if_all_integral_t<Ints...>>
-  void add_clause(int32_t lit, Ints... rest)
+  void add(int32_t lit, Ints... rest)
   {
     std::array literals_array{lit, rest...};
-    add_clause(literals_array);
+    add(literals_array);
   }
 
 

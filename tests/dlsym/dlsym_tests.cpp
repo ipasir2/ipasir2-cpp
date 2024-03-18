@@ -84,9 +84,9 @@ TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
     mock->expect_call(2, solve_call{{1}, 20, IPASIR2_E_OK});
     mock->expect_call(2, failed_call{1, 1, IPASIR2_E_OK});
 
-    solver1->add_clause(std::array{1, 2});
-    solver1->add_clause(std::array{-1});
-    solver2->add_clause(std::array{-1});
+    solver1->add(std::array{1, 2});
+    solver1->add(std::array{-1});
+    solver2->add(std::array{-1});
     CHECK_EQ(solver1->solve(), opt_bool{true});
     CHECK_EQ(solver1->lit_value(2), opt_bool{true});
 

@@ -9,7 +9,7 @@
 
 namespace ip2 = ipasir2;
 
-TEST_CASE("solver::add_clause() functions")
+TEST_CASE("solver::add() functions")
 {
   auto mock = create_ipasir2_doctest_mock();
   ip2::ipasir2 api = ip2::ipasir2::create();
@@ -25,10 +25,10 @@ TEST_CASE("solver::add_clause() functions")
     mock->expect_call(1, add_call{{1, -2, 3, -4}, IPASIR2_R_NONE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add_clause(1);
-    solver->add_clause(1, -2);
-    solver->add_clause(1, -2, 3);
-    solver->add_clause(1, -2, 3, -4);
+    solver->add(1);
+    solver->add(1, -2);
+    solver->add(1, -2, 3);
+    solver->add(1, -2, 3, -4);
   }
 
 
@@ -38,7 +38,7 @@ TEST_CASE("solver::add_clause() functions")
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_NONE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add_clause(clause_3lits);
+    solver->add(clause_3lits);
   }
 
 
@@ -48,7 +48,7 @@ TEST_CASE("solver::add_clause() functions")
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_FORGETTABLE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add_clause(clause_3lits, ipasir2::redundancy::forgettable);
+    solver->add(clause_3lits, ipasir2::redundancy::forgettable);
   }
 
 
@@ -58,14 +58,14 @@ TEST_CASE("solver::add_clause() functions")
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_NONE, IPASIR2_E_INVALID_ARGUMENT});
 
     auto solver = api.create_solver();
-    CHECK_THROWS_AS(solver->add_clause(clause_3lits.begin(), clause_3lits.end()),
+    CHECK_THROWS_AS(solver->add(clause_3lits.begin(), clause_3lits.end()),
                     ip2::ipasir2_error const&);
 
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_NONE, IPASIR2_E_INVALID_ARGUMENT});
-    CHECK_THROWS_AS(solver->add_clause(clause_3lits), ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->add(clause_3lits), ip2::ipasir2_error const&);
 
     mock->expect_call(1, add_call{{1}, IPASIR2_R_NONE, IPASIR2_E_INVALID_ARGUMENT});
-    CHECK_THROWS_AS(solver->add_clause(1), ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->add(1), ip2::ipasir2_error const&);
   }
 
 
@@ -76,7 +76,7 @@ TEST_CASE("solver::add_clause() functions")
 
     std::vector<int32_t> empty_clause;
     auto solver = api.create_solver();
-    solver->add_clause(empty_clause.begin(), empty_clause.end());
+    solver->add(empty_clause.begin(), empty_clause.end());
   }
 
 
@@ -86,7 +86,7 @@ TEST_CASE("solver::add_clause() functions")
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_NONE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add_clause(clause_3lits.begin(), clause_3lits.end());
+    solver->add(clause_3lits.begin(), clause_3lits.end());
   }
 
 
@@ -100,7 +100,7 @@ TEST_CASE("solver::add_clause() functions")
     mock->expect_call(1, add_call{{clause.begin(), clause.end()}, IPASIR2_R_NONE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add_clause(clause.begin(), clause.end());
+    solver->add(clause.begin(), clause.end());
   }
 
 
@@ -110,7 +110,7 @@ TEST_CASE("solver::add_clause() functions")
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_FORGETTABLE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add_clause(clause_3lits.begin(), clause_3lits.end(), ipasir2::redundancy::forgettable);
+    solver->add(clause_3lits.begin(), clause_3lits.end(), ipasir2::redundancy::forgettable);
   }
 
 
