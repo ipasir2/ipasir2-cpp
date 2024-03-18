@@ -1,3 +1,9 @@
+// C++ wrapper for IPASIR-2 solvers
+//
+// Copyright (c) 2024 Felix Kutzner
+// This file is subject to the MIT license (https://spdx.org/licenses/MIT.html).
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #if __cplusplus < 201703L
