@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ipasir2_mock.h"
+#include "mock/ipasir2_mock.h"
 
 #include <doctest.h>
 

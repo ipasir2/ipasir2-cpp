@@ -1,0 +1,13 @@
+set(sources
+  ipasir2_mock_tests.cpp
+  add_clause_tests.cpp
+  detail_tests.cpp
+  query_lit_tests.cpp
+  solve_tests.cpp
+  test_main.cpp
+  tests.cpp
+)
+
+add_test_executables(main-tests ${sources})
+target_link_libraries(main-tests-cpp17 PRIVATE ipasir2mock)
+target_link_libraries(main-tests-cpp20 PRIVATE ipasir2mock)

@@ -1,6 +1,6 @@
 #include <ipasir2cpp.h>
 
-#include "mock/ipasir2_mock_doctest.h"
+#include "ipasir2_mock_doctest.h"
 
 #include <doctest.h>
 
