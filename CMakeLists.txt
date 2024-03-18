@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 3.16.3)
-project(ipasir2-cpp)
+# This project contains the ipasir2-cpp tests. Building it is not required
+# for using ipasir2cpp.h in other software.
+
+cmake_minimum_required(VERSION 3.10)
+project(ipasir2-cpp-tests)
 
 
 # ipasir2cpp.h can be used with C++17, but has extra features when
