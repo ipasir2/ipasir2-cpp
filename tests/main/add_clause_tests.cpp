@@ -15,6 +15,8 @@ TEST_CASE("solver::add() functions")
   ip2::ipasir2 api = ip2::ipasir2::create();
   std::vector<int32_t> clause_3lits = {1, -2, 3};
 
+  using ip2::redundancy;
+
 
   SUBCASE("Successfully add clauses via parameter-pack function")
   {
@@ -29,6 +31,22 @@ TEST_CASE("solver::add() functions")
     solver->add(1, -2);
     solver->add(1, -2, 3);
     solver->add(1, -2, 3, -4);
+  }
+
+
+  SUBCASE("Successfully add clauses via parameter-pack function with non-default redundancy")
+  {
+    mock->expect_init_call(1);
+    mock->expect_call(1, add_call{{1}, IPASIR2_R_EQUIVALENT, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, -2}, IPASIR2_R_EQUISATISFIABLE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, -2, 3}, IPASIR2_R_FORGETTABLE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, -2, 3, -4}, IPASIR2_R_NONE, IPASIR2_E_OK});
+
+    auto solver = api.create_solver();
+    solver->add(redundancy::equivalent, 1);
+    solver->add(redundancy::equisatisfiable, 1, -2);
+    solver->add(redundancy::forgettable, 1, -2, 3);
+    solver->add(redundancy::none, 1, -2, 3, -4);
   }
 
 
@@ -48,7 +66,7 @@ TEST_CASE("solver::add() functions")
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_FORGETTABLE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add(clause_3lits, ipasir2::redundancy::forgettable);
+    solver->add(redundancy::forgettable, clause_3lits);
   }
 
 
@@ -110,7 +128,7 @@ TEST_CASE("solver::add() functions")
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_FORGETTABLE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add(clause_3lits.begin(), clause_3lits.end(), ipasir2::redundancy::forgettable);
+    solver->add(redundancy::forgettable, clause_3lits.begin(), clause_3lits.end());
   }
 
 

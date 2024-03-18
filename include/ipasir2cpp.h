@@ -238,11 +238,23 @@ public:
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename Iter, typename = detail::enable_unless_integral_t<Iter>>
-  void add(Iter start, Iter stop, redundancy red = redundancy::none)
+  void add(redundancy red, Iter start, Iter stop)
   {
+    // NB: the redundancy parameter is optional. Unfortunately, there seems to be no
+    // straightforward way to declare an optional last redundancy parameter for the
+    // parameter-pack version of the add() function. To keep the interface consistent, the
+    // overloads without the redundancy parameter are spelled out explicitly for now.
+
     auto const& [clause_ptr, clause_len] = detail::as_contiguous(start, stop, m_clause_buf);
     ipasir2_redundancy c_redundancy = static_cast<ipasir2_redundancy>(red);
     detail::throw_if_failed(m_api.add(m_handle.get(), clause_ptr, clause_len, c_redundancy));
+  }
+
+
+  template <typename Iter, typename = detail::enable_unless_integral_t<Iter>>
+  void add(Iter start, Iter stop)
+  {
+    add(redundancy::none, start, stop);
   }
 
 
@@ -262,9 +274,24 @@ public:
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename LitContainer>
-  void add(LitContainer const& container, redundancy red = redundancy::none)
+  void add(redundancy red, LitContainer const& container)
   {
-    add(container.begin(), container.end(), red);
+    add(red, container.begin(), container.end());
+  }
+
+
+  template <typename LitContainer>
+  void add(LitContainer const& container)
+  {
+    add(redundancy::none, container.begin(), container.end());
+  }
+
+
+  template <typename... Ints, typename = detail::enable_if_all_integral_t<Ints...>>
+  void add(redundancy red, int32_t lit, Ints... rest)
+  {
+    std::array literals_array{lit, rest...};
+    add(red, literals_array.begin(), literals_array.end());
   }
 
 
@@ -272,7 +299,7 @@ public:
   void add(int32_t lit, Ints... rest)
   {
     std::array literals_array{lit, rest...};
-    add(literals_array);
+    add(redundancy::none, literals_array.begin(), literals_array.end());
   }
 
 
