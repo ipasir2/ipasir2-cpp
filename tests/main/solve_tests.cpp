@@ -39,6 +39,22 @@ TEST_CASE("solver::solve() functions")
   }
 
 
+  SUBCASE("Successfully add clauses via parameter-pack function")
+  {
+    mock->expect_init_call(1);
+    mock->expect_call(1, solve_call{{1}, 0, IPASIR2_E_OK});
+    mock->expect_call(1, solve_call{{1, -2}, 10, IPASIR2_E_OK});
+    mock->expect_call(1, solve_call{{1, -2, 3}, 20, IPASIR2_E_OK});
+    mock->expect_call(1, solve_call{{1, -2, 3, -4}, 0, IPASIR2_E_OK});
+
+    auto solver = api.create_solver();
+    CHECK_EQ(solver->solve(1), optional_bool{});
+    CHECK_EQ(solver->solve(1, -2), optional_bool{true});
+    CHECK_EQ(solver->solve(1, -2, 3), optional_bool{false});
+    CHECK_EQ(solver->solve(1, -2, 3, -4), optional_bool{});
+  }
+
+
   SUBCASE("Successfully solve with assumptions vector")
   {
     mock->expect_init_call(1);
@@ -97,12 +113,14 @@ TEST_CASE("solver::solve() functions")
     mock->expect_call(1, solve_call{{}, 10, IPASIR2_E_UNKNOWN});
     mock->expect_call(1, solve_call{assumptions, 10, IPASIR2_E_UNKNOWN});
     mock->expect_call(1, solve_call{assumptions, 10, IPASIR2_E_UNKNOWN});
+    mock->expect_call(1, solve_call{{1}, 10, IPASIR2_E_UNKNOWN});
 
     auto solver = api.create_solver();
     CHECK_THROWS_AS(solver->solve(), ip2::ipasir2_error const&);
     CHECK_THROWS_AS(solver->solve(assumptions), ip2::ipasir2_error const&);
     CHECK_THROWS_AS(solver->solve(assumptions.begin(), assumptions.end()),
                     ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->solve(1), ip2::ipasir2_error const&);
   }
 
   CHECK(!mock->has_outstanding_expects());

@@ -161,6 +161,14 @@ namespace detail {
   }
 
 
+  template <typename... Ts>
+  using enable_if_all_integral_t = std::enable_if_t<std::conjunction_v<std::is_integral<Ts>...>>;
+
+
+  template <typename T>
+  using enable_unless_integral_t = std::enable_if_t<!std::is_integral_v<T>>;
+
+
 #if __cpp_lib_concepts
   template <typename T>
   constexpr bool is_contiguous_lit_iter = std::contiguous_iterator<T>;
@@ -223,7 +231,7 @@ public:
   ///               - pointer type which is convertible to `int32_t const*`
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
-  template <typename Iter>
+  template <typename Iter, typename = detail::enable_unless_integral_t<Iter>>
   void add_clause(Iter start, Iter stop, redundancy red = redundancy::none)
   {
     auto const& [clause_ptr, clause_len] = detail::as_contiguous(start, stop, m_clause_buf);
@@ -254,7 +262,15 @@ public:
   }
 
 
-  template <typename Iter>
+  template <typename... Ints, typename = detail::enable_if_all_integral_t<Ints...>>
+  void add_clause(int32_t lit, Ints... rest)
+  {
+    std::array literals_array{lit, rest...};
+    add_clause(literals_array);
+  }
+
+
+  template <typename Iter, typename = detail::enable_unless_integral_t<Iter>>
   optional_bool solve(Iter assumptions_start, Iter assumptions_stop)
   {
     auto const& [assumptions_ptr, assumptions_len]
@@ -269,6 +285,14 @@ public:
   optional_bool solve(LitContainer const& assumptions)
   {
     return solve(assumptions.begin(), assumptions.end());
+  }
+
+
+  template <typename... Ints, typename = detail::enable_if_all_integral_t<Ints...>>
+  optional_bool solve(int32_t assumption, Ints... rest)
+  {
+    std::array assumptions{assumption, rest...};
+    return solve(assumptions);
   }
 
 
