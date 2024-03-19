@@ -238,23 +238,11 @@ public:
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename Iter, typename = detail::enable_unless_integral_t<Iter>>
-  void add(redundancy red, Iter start, Iter stop)
+  void add(Iter start, Iter stop, redundancy red = redundancy::none)
   {
-    // NB: the redundancy parameter is optional. Unfortunately, there seems to be no
-    // straightforward way to declare an optional last redundancy parameter for the
-    // parameter-pack version of the add() function. To keep the interface consistent, the
-    // overloads without the redundancy parameter are spelled out explicitly for now.
-
     auto const& [clause_ptr, clause_len] = detail::as_contiguous(start, stop, m_clause_buf);
     ipasir2_redundancy c_redundancy = static_cast<ipasir2_redundancy>(red);
     detail::throw_if_failed(m_api.add(m_handle.get(), clause_ptr, clause_len, c_redundancy));
-  }
-
-
-  template <typename Iter, typename = detail::enable_unless_integral_t<Iter>>
-  void add(Iter start, Iter stop)
-  {
-    add(redundancy::none, start, stop);
   }
 
 
@@ -273,33 +261,41 @@ public:
   ///                       - pointers convertible to `int32_t const*`.
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
-  template <typename LitContainer>
-  void add(redundancy red, LitContainer const& container)
+  template <typename LitContainer, typename = decltype(std::declval<LitContainer>().begin())>
+  void add(LitContainer const& container, redundancy red = redundancy::none)
   {
-    add(red, container.begin(), container.end());
+    add(container.begin(), container.end(), red);
   }
 
 
-  template <typename LitContainer>
-  void add(LitContainer const& container)
+private:
+  template <typename... lits_and_redundancy, size_t... lit_indices>
+  void add_parampack_helper(std::tuple<lits_and_redundancy...> params,
+                            std::index_sequence<lit_indices...>)
   {
-    add(redundancy::none, container.begin(), container.end());
+    std::array literals_array{std::get<lit_indices>(params)...};
+    redundancy red = std::get<sizeof...(lits_and_redundancy) - 1>(params);
+    add(literals_array.begin(), literals_array.end(), red);
   }
 
 
-  template <typename... Ints, typename = detail::enable_if_all_integral_t<Ints...>>
-  void add(redundancy red, int32_t lit, Ints... rest)
+public:
+  template <typename... Ts>
+  void add(int32_t lit, Ts... rest)
   {
-    std::array literals_array{lit, rest...};
-    add(red, literals_array.begin(), literals_array.end());
-  }
-
-
-  template <typename... Ints, typename = detail::enable_if_all_integral_t<Ints...>>
-  void add(int32_t lit, Ints... rest)
-  {
-    std::array literals_array{lit, rest...};
-    add(redundancy::none, literals_array.begin(), literals_array.end());
+    if constexpr (std::conjunction_v<std::is_integral<Ts>...>) {
+      std::array literals_array{lit, rest...};
+      add(literals_array.begin(), literals_array.end(), redundancy::none);
+    }
+    else {
+      // Here we are in a pickle: this method optionally supports specifying
+      // the clause redundancy as its last argument. However, this can't be
+      // implemented as an optional last parameter, due to the parameter pack.
+      // This is solved by a trick: create a tuple of all arguments, then
+      // use an index sequence to std::get<>() the literals.
+      add_parampack_helper(std::forward_as_tuple(lit, rest...),
+                           std::make_index_sequence<sizeof...(Ts)>{});
+    }
   }
 
 

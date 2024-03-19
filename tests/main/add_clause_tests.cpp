@@ -43,10 +43,10 @@ TEST_CASE("solver::add() functions")
     mock->expect_call(1, add_call{{1, -2, 3, -4}, IPASIR2_R_NONE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add(redundancy::equivalent, 1);
-    solver->add(redundancy::equisatisfiable, 1, -2);
-    solver->add(redundancy::forgettable, 1, -2, 3);
-    solver->add(redundancy::none, 1, -2, 3, -4);
+    solver->add(1, redundancy::equivalent);
+    solver->add(1, -2, redundancy::equisatisfiable);
+    solver->add(1, -2, 3, redundancy::forgettable);
+    solver->add(1, -2, 3, -4, redundancy::none);
   }
 
 
@@ -66,7 +66,7 @@ TEST_CASE("solver::add() functions")
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_FORGETTABLE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add(redundancy::forgettable, clause_3lits);
+    solver->add(clause_3lits, redundancy::forgettable);
   }
 
 
@@ -128,7 +128,7 @@ TEST_CASE("solver::add() functions")
     mock->expect_call(1, add_call{clause_3lits, IPASIR2_R_FORGETTABLE, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    solver->add(redundancy::forgettable, clause_3lits.begin(), clause_3lits.end());
+    solver->add(clause_3lits.begin(), clause_3lits.end(), redundancy::forgettable);
   }
 
 
