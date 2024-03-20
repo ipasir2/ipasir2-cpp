@@ -175,6 +175,13 @@ namespace detail {
   using enable_unless_integral_t = std::enable_if_t<!std::is_integral_v<T>>;
 
 
+  // TODO: only enable if the container actually contains literals
+  // TODO: support ADL lookup of cbegin and cend
+  template <typename T>
+  using enable_if_lit_container_t = std::void_t<decltype(std::cbegin(std::declval<T>())),
+                                                decltype(std::cend(std::declval<T>()))>;
+
+
 #if __cpp_lib_concepts
   template <typename T>
   constexpr bool is_contiguous_lit_iter = std::contiguous_iterator<T>;
@@ -256,15 +263,15 @@ public:
   /// the buffer to the solver. For C++17 and earlier, the clause is copied unless `LitContainer`
   /// is a `std::vector`, or has pointer-type iterators.
   ///
-  /// \tparam LitContainer A type with `begin()` and `end()` methods returning either
+  /// \tparam LitContainer A type for which `std::cbegin()` and `std::cend()` functions return either
   ///                       - iterators with values convertible to `int32_t`
   ///                       - pointers convertible to `int32_t const*`.
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
-  template <typename LitContainer, typename = decltype(std::declval<LitContainer>().begin())>
+  template <typename LitContainer, typename = detail::enable_if_lit_container_t<LitContainer>>
   void add(LitContainer const& container, redundancy red = redundancy::none)
   {
-    add(container.begin(), container.end(), red);
+    add(std::cbegin(container), std::cend(container), red);
   }
 
 
@@ -310,10 +317,10 @@ public:
   }
 
 
-  template <typename LitContainer>
+  template <typename LitContainer, typename = detail::enable_if_lit_container_t<LitContainer>>
   optional_bool solve(LitContainer const& assumptions)
   {
-    return solve(assumptions.begin(), assumptions.end());
+    return solve(std::cbegin(assumptions), std::cend(assumptions));
   }
 
 

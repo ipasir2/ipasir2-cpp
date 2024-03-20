@@ -132,5 +132,23 @@ TEST_CASE("solver::add() functions")
   }
 
 
+  SUBCASE("Successfully add clauses expressed as C arrays")
+  {
+    mock->expect_init_call(1);
+    mock->expect_call(1, add_call{{-1}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, 2}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, 2, -3}, IPASIR2_R_NONE, IPASIR2_E_OK});
+
+    int32_t clause1[]{-1};
+    int32_t clause2[]{1, 2};
+    int32_t clause3[]{1, 2, -3};
+
+    auto solver = api.create_solver();
+    solver->add(clause1);
+    solver->add(clause2);
+    solver->add(clause3);
+  }
+
+
   CHECK(!mock->has_outstanding_expects());
 }

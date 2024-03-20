@@ -69,7 +69,7 @@ TEST_CASE("solver::solve() functions")
   }
 
 
-  SUBCASE("Successfully solve with non-vector assumption containers")
+  SUBCASE("Successfully solve with non-vector assumption iterables")
   {
     mock->expect_init_call(1);
     auto solver = api.create_solver();
@@ -83,6 +83,10 @@ TEST_CASE("solver::solve() functions")
     mock->expect_call(1, solve_call{assumptions, 10, IPASIR2_E_OK});
     CHECK_EQ(solver->solve(assumptions_span), optional_bool{true});
 #endif
+
+    int assumptions_c_arr[]{1, 2};
+    mock->expect_call(1, solve_call{{1, 2}, 10, IPASIR2_E_OK});
+    CHECK_EQ(solver->solve(assumptions_c_arr), optional_bool{true});
   }
 
 
