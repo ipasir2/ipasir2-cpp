@@ -13,6 +13,7 @@
 #include <ipasir2.h>
 
 #include <filesystem>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -96,6 +97,7 @@ namespace detail {
       load_sym(result.failed, "ipasir2_failed", result);
       load_sym(result.init, "ipasir2_init", result);
       load_sym(result.release, "ipasir2_release", result);
+      load_sym(result.set_terminate, "ipasir2_set_terminate", result);
       load_sym(result.signature, "ipasir2_signature", result);
       load_sym(result.solve, "ipasir2_solve", result);
       load_sym(result.val, "ipasir2_val", result);
@@ -112,6 +114,7 @@ namespace detail {
       result.failed = &ipasir2_failed;
       result.init = &ipasir2_init;
       result.release = &ipasir2_release;
+      result.set_terminate = &ipasir2_set_terminate;
       result.signature = &ipasir2_signature;
       result.solve = &ipasir2_solve;
       result.val = &ipasir2_val;
@@ -123,6 +126,7 @@ namespace detail {
     decltype(&ipasir2_failed) failed = nullptr;
     decltype(&ipasir2_init) init = nullptr;
     decltype(&ipasir2_release) release = nullptr;
+    decltype(&ipasir2_set_terminate) set_terminate = nullptr;
     decltype(&ipasir2_signature) signature = nullptr;
     decltype(&ipasir2_solve) solve = nullptr;
     decltype(&ipasir2_val) val = nullptr;
@@ -373,6 +377,33 @@ public:
   }
 
 
+  template <typename Func>
+  void set_terminate_callback(Func&& callback)
+  {
+    if (!m_terminate_callback) {
+      detail::throw_if_failed(m_api.set_terminate(m_handle.get(), this, [](void* data) -> int {
+        solver* s = reinterpret_cast<solver*>(data);
+        if (s->m_terminate_callback) {
+          return s->m_terminate_callback();
+        }
+        else {
+          // Clearing the callback has failed ~> behave as if user hadn't set a callback
+          return false;
+        }
+      }));
+    }
+
+    m_terminate_callback = callback;
+  }
+
+
+  void clear_terminate_callback()
+  {
+    m_terminate_callback = {};
+    detail::throw_if_failed(m_api.set_terminate(m_handle.get(), nullptr, nullptr));
+  }
+
+
   // `solver` objects manage IPASIR2 resources. Also, pointers to `solver` objects
   // are passed to IPASIR2 solvers as cookies for callbacks. Hence, both copy and
   // move operators are deleted for `solver`.
@@ -404,6 +435,8 @@ private:
   using unique_ipasir2_handle = std::unique_ptr<void, decltype(&ipasir2_release)>;
   unique_ipasir2_handle m_handle;
   std::vector<int32_t> m_clause_buf;
+
+  std::function<bool()> m_terminate_callback;
 };
 
 

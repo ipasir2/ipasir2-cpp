@@ -99,6 +99,22 @@ public:
   }
 
 
+  void simulate_terminate_callback_call(instance_id instance_id, int expected_cb_result) override
+  {
+    auto callback_iter = m_terminate_callbacks.find(instance_id);
+    if (callback_iter == m_terminate_callbacks.end()) {
+      throw ipasir2_mock_error{"Currently no callback registered for the given instance"};
+    }
+
+    auto const& [callback, cookie] = callback_iter->second;
+    int actual_cb_result = callback(cookie);
+
+    if (expected_cb_result != actual_cb_result) {
+      throw ipasir2_mock_error{"Terminate callback returned unexpected result"};
+    }
+  }
+
+
   std::string const& get_signature() const { return m_signature; }
 
 
@@ -195,6 +211,17 @@ public:
   }
 
 
+  void register_terminate_callback(instance_id solver,
+                                   std::function<int(void*)> const& callback,
+                                   void* cookie)
+  {
+    m_terminate_callbacks[solver] = {callback, cookie};
+  }
+
+
+  void clear_terminate_callback(instance_id solver) { m_terminate_callbacks.erase(solver); }
+
+
   void fail_test(std::string_view message) { m_fail_observer(message); }
 
 
@@ -208,6 +235,9 @@ private:
   std::optional<ipasir2_errorcode> m_signature_result;
 
   std::function<void(std::string_view)> m_fail_observer;
+
+  std::unordered_map<instance_id, std::pair<std::function<int(void*)>, void*>>
+      m_terminate_callbacks;
 };
 
 
@@ -375,6 +405,34 @@ ipasir2_errorcode ipasir2_failed(void* solver, int32_t lit, int32_t* result)
     }
 
     *result = spec.result;
+    return spec.return_value;
+  });
+}
+
+
+ipasir2_errorcode ipasir2_set_terminate(void* solver, void* data, int (*callback)(void* data))
+{
+  return check_ipasir2_call<set_terminate_call>(solver, [&](set_terminate_call const& spec) {
+    instance_id const solver_id = reinterpret_cast<instance_id>(solver);
+    if (spec.expect_nonnull_callback) {
+      if (data == nullptr || callback == nullptr) {
+        throw ipasir2_mock_error{
+            "ipasir2_failed(): expected to get a callback, but it was cleared"};
+      }
+
+      s_current_mock->register_terminate_callback(solver_id, callback, data);
+    }
+    else {
+      if (data != nullptr || callback != nullptr) {
+        throw ipasir2_mock_error{
+            "ipasir2_failed(): expected the callback to be cleared, but it was set"};
+      }
+
+      if (spec.return_value == IPASIR2_E_OK) {
+        s_current_mock->clear_terminate_callback(solver_id);
+      }
+    }
+
     return spec.return_value;
   });
 }

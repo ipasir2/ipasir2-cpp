@@ -36,7 +36,7 @@ following functions:
  - [x] `ipasir2_solve`
  - [x] `ipasir2_val`
  - [x] `ipasir2_failed`
- - [ ] `ipasir2_set_terminate`
+ - [x] `ipasir2_set_terminate`
  - [ ] `ipasir2_set_export`
  - [ ] `ipasir2_set_import`
  - [ ] `ipasir2_set_notify`
