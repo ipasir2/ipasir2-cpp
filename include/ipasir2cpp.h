@@ -12,12 +12,12 @@
 
 #include <ipasir2.h>
 
+#include <exception>
 #include <filesystem>
 #include <functional>
 #include <iterator>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -36,10 +36,48 @@
 
 namespace ipasir2 {
 
-class ipasir2_error : public std::runtime_error {
+namespace detail {
+  inline std::string get_description(ipasir2_errorcode errorcode)
+  {
+    switch (errorcode) {
+    case IPASIR2_E_OK:
+      return "The function call was successful.";
+    case IPASIR2_E_UNKNOWN:
+      return "The function call failed for an unknown reason.";
+    case IPASIR2_E_UNSUPPORTED:
+      return "The function is not implemented by the solver.";
+    case IPASIR2_E_UNSUPPORTED_ARGUMENT:
+      return "The function is not implemented for handling the given argument value.";
+    case IPASIR2_E_UNSUPPORTED_OPTION:
+      return "The option is not supported by the solver.";
+    case IPASIR2_E_INVALID_STATE:
+      return "The function call is not allowed in the current state of the solver.";
+    case IPASIR2_E_INVALID_ARGUMENT:
+      return "The function call failed because of an invalid argument.";
+    case IPASIR2_E_INVALID_OPTION_VALUE:
+      return "The option value is outside the allowed range.";
+    default:
+      return "Unknown error";
+    }
+  }
+}
+
+
+class ipasir2_error : public std::exception {
 public:
-  explicit ipasir2_error(ipasir2_errorcode) : runtime_error("IPASIR2 call failed"){};
-  explicit ipasir2_error(std::string_view message) : runtime_error(message.data()){};
+  explicit ipasir2_error(std::string_view func_name, ipasir2_errorcode code)
+    : m_message{std::string{func_name} + "(): " + detail::get_description(code)}
+    , m_errorcode{code} {};
+
+  explicit ipasir2_error(std::string_view message) : m_message{message} {};
+
+  char const* what() const noexcept override { return m_message.c_str(); }
+
+  std::optional<ipasir2_errorcode> const& error_code() const noexcept { return m_errorcode; }
+
+private:
+  std::string m_message;
+  std::optional<ipasir2_errorcode> m_errorcode;
 };
 
 
@@ -163,10 +201,10 @@ namespace detail {
   };
 
 
-  inline void throw_if_failed(ipasir2_errorcode errorcode)
+  inline void throw_if_failed(ipasir2_errorcode errorcode, std::string_view func_name)
   {
     if (errorcode != IPASIR2_E_OK) {
-      throw ipasir2_error{errorcode};
+      throw ipasir2_error{func_name, errorcode};
     }
   }
 
@@ -253,7 +291,8 @@ public:
   {
     auto const& [clause_ptr, clause_len] = detail::as_contiguous(start, stop, m_clause_buf);
     ipasir2_redundancy c_redundancy = static_cast<ipasir2_redundancy>(red);
-    detail::throw_if_failed(m_api.add(m_handle.get(), clause_ptr, clause_len, c_redundancy));
+    detail::throw_if_failed(m_api.add(m_handle.get(), clause_ptr, clause_len, c_redundancy),
+                            "ipasir2_add");
   }
 
 
@@ -316,7 +355,8 @@ public:
     auto const& [assumptions_ptr, assumptions_len]
         = detail::as_contiguous(assumptions_start, assumptions_stop, m_clause_buf);
     int result = 0;
-    detail::throw_if_failed(m_api.solve(m_handle.get(), &result, assumptions_ptr, assumptions_len));
+    detail::throw_if_failed(m_api.solve(m_handle.get(), &result, assumptions_ptr, assumptions_len),
+                            "ipasir2_solve");
     return detail::to_solve_result(result);
   }
 
@@ -339,7 +379,7 @@ public:
   optional_bool solve()
   {
     int32_t result = 0;
-    detail::throw_if_failed(m_api.solve(m_handle.get(), &result, nullptr, 0));
+    detail::throw_if_failed(m_api.solve(m_handle.get(), &result, nullptr, 0), "ipasir2_solve");
     return detail::to_solve_result(result);
   }
 
@@ -347,7 +387,7 @@ public:
   optional_bool lit_value(int32_t lit) const
   {
     int32_t result = 0;
-    detail::throw_if_failed(m_api.val(m_handle.get(), lit, &result));
+    detail::throw_if_failed(m_api.val(m_handle.get(), lit, &result), "ipasir2_val");
 
     if (result == lit) {
       return optional_bool{true};
@@ -367,7 +407,7 @@ public:
   bool lit_failed(int32_t lit) const
   {
     int32_t result = 0;
-    detail::throw_if_failed(m_api.failed(m_handle.get(), lit, &result));
+    detail::throw_if_failed(m_api.failed(m_handle.get(), lit, &result), "ipasir2_failed");
 
     if (result != 0 && result != 1) {
       throw ipasir2_error{"Unknown truth value received from solver"};
@@ -381,7 +421,7 @@ public:
   void set_terminate_callback(Func&& callback)
   {
     if (!m_terminate_callback) {
-      detail::throw_if_failed(m_api.set_terminate(m_handle.get(), this, [](void* data) -> int {
+      auto result = m_api.set_terminate(m_handle.get(), this, [](void* data) -> int {
         solver* s = reinterpret_cast<solver*>(data);
         if (s->m_terminate_callback) {
           return s->m_terminate_callback();
@@ -390,7 +430,8 @@ public:
           // Clearing the callback has failed ~> behave as if user hadn't set a callback
           return false;
         }
-      }));
+      });
+      detail::throw_if_failed(result, "ipasir2_set_terminate");
     }
 
     m_terminate_callback = callback;
@@ -400,7 +441,8 @@ public:
   void clear_terminate_callback()
   {
     m_terminate_callback = {};
-    detail::throw_if_failed(m_api.set_terminate(m_handle.get(), nullptr, nullptr));
+    detail::throw_if_failed(m_api.set_terminate(m_handle.get(), nullptr, nullptr),
+                            "ipasir2_set_terminate");
   }
 
 
@@ -426,7 +468,7 @@ private:
   explicit solver(detail::shared_c_api const& api) : m_api{api}, m_handle{nullptr, nullptr}
   {
     void* handle = nullptr;
-    detail::throw_if_failed(m_api.init(&handle));
+    detail::throw_if_failed(m_api.init(&handle), "ipasir2_init");
     m_handle = unique_ipasir2_handle{handle, m_api.release};
   }
 
@@ -475,7 +517,7 @@ public:
   std::string signature() const
   {
     char const* result = nullptr;
-    detail::throw_if_failed(m_api.signature(&result));
+    detail::throw_if_failed(m_api.signature(&result), "ipasir2_signature");
     return result;
   }
 
