@@ -111,13 +111,13 @@ TEST_CASE("Mock allows creation and release of two instances")
   std::vector<void*> solvers{2};
 
   mock->expect_init_call(1);
-  REQUIRE_EQ(ipasir2_init(&solvers[1]), IPASIR2_E_OK);
+  REQUIRE_EQ(ipasir2_init(&solvers[0]), IPASIR2_E_OK);
 
   mock->expect_init_call(2);
-  REQUIRE_EQ(ipasir2_init(&solvers[2]), IPASIR2_E_OK);
+  REQUIRE_EQ(ipasir2_init(&solvers[1]), IPASIR2_E_OK);
 
+  REQUIRE_EQ(ipasir2_release(solvers[0]), IPASIR2_E_OK);
   REQUIRE_EQ(ipasir2_release(solvers[1]), IPASIR2_E_OK);
-  REQUIRE_EQ(ipasir2_release(solvers[2]), IPASIR2_E_OK);
 }
 
 
@@ -197,14 +197,14 @@ TEST_CASE("Unreleased instances are detected" * doctest::should_fail() * doctest
 
   CHECK(!mock->has_outstanding_expects());
   mock->expect_init_call(1);
+  mock->expect_init_call(2);
   CHECK(mock->has_outstanding_expects());
 
   ipasir2_init(&solvers[0]);
-  ipasir2_init(&solvers[1]);
   CHECK(mock->has_outstanding_expects());
 
   ipasir2_release(solvers[0]);
   CHECK(mock->has_outstanding_expects());
-  ipasir2_release(solvers[1]);
+  ipasir2_init(&solvers[1]);
   CHECK(!mock->has_outstanding_expects());
 }
