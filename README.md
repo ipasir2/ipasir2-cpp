@@ -6,21 +6,77 @@ C++ porcelain for IPASIR-2
 **Caveat:** Like IPASIR-2, this project is work in progress.
 
 
+## Example
+
+See the `examples` directory. The most basic one is `01_readme.cpp`:
+
+```
+namespace ip2 = ipasir2;
+
+try {
+  ip2::ipasir2 api = ip2::ipasir2::create();
+  // For dynamic loading: ip2::ipasir2 api = ip2::ipasir2::create("./solver.so");
+
+  std::unique_ptr<ip2::solver> solver = api.create_solver();
+  solver->add(1, 2, 3);
+  solver->add(-1);
+  solver->add(-2);
+
+  if (auto result = solver->solve(); result.has_value()) {
+    std::cout << std::format("Result: {}\n", result.unwrap() ? "SAT" : "UNSAT");
+  }
+  else {
+    std::cout << "The solver did not produce a result.\n";
+  }
+}
+catch (ip2::ipasir2_error const& error) {
+  std::cerr << std::format("Could not solve the formula: {}\n", error.what());
+}
+```
+
 
 ## Design goals
 
-- **No magic**. `ipasir2-cpp` is a thin, yet modern-C++ wrapper around the IPASIR-2 API. It hides the C API, but offers a straightforward mental mapping to raw IPASIR-2.
+- **No magic**. `ipasir2-cpp` is a thin, yet modern-C++ wrapper around the IPASIR-2
+  API. It hides the C API, but offers a straightforward mental mapping to raw IPASIR-2.
+  As an escape hatch, `ipasir2-cpp` still allows low-level access to solvers, so custom
+  extensions of the IPASIR-2 API can be used together with the wrapper.
 
-- **Easy to use**. `ipasir2-cpp` plays well with STL data structures, but also with custom clause and literal types. It
-is more important to have an interface that is idiomatic and easy to use, than to have a simple wrapper implementation.
+- **Easy to use**. `ipasir2-cpp` plays well with STL data structures, but also with
+  custom clause and literal types. Integration is easy as well: `ipasir2-cpp` consists
+  of a single header file `ipasir2cpp.h`, which only requires `ipasir2.h` in your include
+  path. No compiler flags or `#define`s needed.
 
-- **Flexible**. The wrapper supports solvers linked to your binary at build time as well as loading solver libraries at execution time.
-
-- **Easy to integrate**. `ipasir2-cpp` consists of a single header file, `ipasir2cpp.h`, which only requires `ipasir2.h` in your include path. No `#define` needs to be set if you don't link an IPASIR-2 solver at build time.
+- **Flexible**. The wrapper supports solvers linked to your binary at build time as
+  well as loading solver libraries at execution time. It is not necessary to link to
+  an IPASIR-2 implementation at build time if you only want to load solvers at runtime.
 
 - **Efficient**. `ipasir2-cpp` avoids adding overhead where possible.
 
-- **Unobstrusive**. `ipasir2-cpp` allows low-level access to solvers, so custom extensions of the IPASIR-2 API can be used.
+- **Modern**. Features that are not part of C++17, but useful for an IPASIR-2 wrapper
+  (concepts library, `std::span`) are used if supported by the standard library used by
+  the client.
+
+
+### Non-goals
+
+- **Support for older C++ standards**. Supporting C++14 and earlier is out of scope for this
+  project, since it would add significant complexity to the wrapper.
+
+- **Support for IPASIR-1**. This is also not planned, to avoid extra complexity. The main IPASIR-2
+  repository provides code for wrapping IPASIR-1 solvers in the IPASIR-2 API.
+
+- **Out-of-the-box support for loading solvers at execution time on non-POSIX platforms**. For
+  loading solvers at execution time, the wrapper only supports `dlopen()`. On other platforms,
+  clients need to provide a `dlfcn.h` implementation, or to fill a structure containing the
+  IPASIR-2 function pointers when instantiating the API.
+
+
+## Supported compilers
+
+`ipasir2cpp.h` and the tests require C++17. The code in the `examples` directory requires C++20.
+
+**TODO:** minimum compiler versions
 
 
 
@@ -44,31 +100,13 @@ following functions:
  - [ ] `ipasir2_set_notify`
 
 
+Features:
 
-## Example
-
-```
-namespace ip2 = ipasir2;
-
-try {
-  ip2::ipasir2 api = ip2::ipasir2::create();
-  // For dynamic loading: ip2::ipasir2 api = ip2::ipasir2::create("./solver.so");
-
-  std::unique_ptr<ip2::solver> solver = api.create_solver();
-  solver->add(1, 2, 3);
-  solver->add(-1);
-  solver->add(-2);
-
-  if (auto result = solver->solve(); result.has_value()) {
-    std::cout << std::format("Result: {}\n", result.unwrap() ? "SAT" : "UNSAT");
-  }
-  else {
-    std::cout << "The solver did not produce a result.\n";
-  }
-}
-catch (ip2::ipasir2_error const& error) {
-  std::cerr << std::format("Could not solve the formula: {}\n", error.what());
-  return 1;
-}
-```
-
+ - [x] Support for `dlopen()`
+ - [x] Support for custom clause types
+ - [ ] Support for custom literal types
+ - [x] Support for IPASIR-1 functionality
+ - [ ] Options API
+ - [ ] Support for importing clauses
+ - [ ] Support for observing the current partial assignment
+ - [ ] Namespace versioning
