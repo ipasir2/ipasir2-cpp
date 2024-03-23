@@ -32,7 +32,7 @@
 #include <span>
 #endif
 
-#if defined(_POSIX_C_SOURCE) && __has_include(<dlfcn.h>)
+#if __has_include(<dlfcn.h>)
 #include <dlfcn.h>
 #define IPASIR2CPP_HAS_DLOPEN
 #endif
