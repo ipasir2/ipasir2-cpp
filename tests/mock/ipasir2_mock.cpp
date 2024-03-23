@@ -128,6 +128,12 @@ public:
   }
 
 
+  void* get_ipasir2_handle(instance_id instance_id) override
+  {
+    return reinterpret_cast<void*>(instance_id);
+  }
+
+
   std::string const& get_signature() const { return m_signature; }
 
 

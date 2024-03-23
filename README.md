@@ -20,6 +20,8 @@ is more important to have an interface that is idiomatic and easy to use, than t
 
 - **Efficient**. `ipasir2-cpp` avoids adding overhead where possible.
 
+- **Unobstrusive**. `ipasir2-cpp` allows low-level access to solvers, so custom extensions of the IPASIR-2 API can be used.
+
 
 
 ## Progress

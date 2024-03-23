@@ -214,6 +214,8 @@ namespace detail {
 
 
   private:
+    // Unlike IPASIR-2 solver handles, the shared-library handle is not accessible
+    // since it is an implementation detail, not an IPASIR-2 item.
     std::shared_ptr<void> m_lib_handle;
 
 
@@ -524,6 +526,13 @@ public:
     detail::throw_if_failed(m_api.set_export(m_handle.get(), nullptr, 0, nullptr),
                             "ipasir2_set_export");
   }
+
+
+  /// Returns the IPASIR-2 solver handle. This handle is valid for the lifetime of the
+  /// `solver` object.
+  ///
+  /// This function can be used to access non-standard extensions of the IPASIR-2 API.
+  void* get_ipasir2_handle() { return m_handle.get(); }
 
 
   // `solver` objects manage IPASIR2 resources. Also, pointers to `solver` objects

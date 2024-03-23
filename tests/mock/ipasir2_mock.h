@@ -94,6 +94,8 @@ public:
                                              std::vector<int32_t> const& clause)
       = 0;
 
+  virtual void* get_ipasir2_handle(instance_id instance_id) = 0;
+
   ipasir2_mock(ipasir2_mock const&) = delete;
   ipasir2_mock(ipasir2_mock&&) = delete;
   ipasir2_mock& operator=(ipasir2_mock const&) = delete;
