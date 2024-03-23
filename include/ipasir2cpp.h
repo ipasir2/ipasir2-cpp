@@ -99,6 +99,15 @@ public:
   /// \throws std::bad_optional_access if the object has no value.
   bool unwrap() const { return m_value.value(); }
 
+  template <typename T>
+  T const& map(T const& if_true, T const& if_false, T const& if_empty) const
+  {
+    if (m_value.has_value()) {
+      return *m_value ? if_true : if_false;
+    }
+    return if_empty;
+  }
+
   bool has_value() const { return m_value.has_value(); }
 
   std::optional<bool> as_std_optional() const { return m_value; }
@@ -125,10 +134,7 @@ private:
 
 inline std::string to_string(optional_bool const& optbool)
 {
-  if (optbool.has_value()) {
-    return optbool.unwrap() ? "sat" : "unsat";
-  }
-  return "unknown";
+  return optbool.map<std::string>("sat", "unsat", "unknown");
 }
 
 

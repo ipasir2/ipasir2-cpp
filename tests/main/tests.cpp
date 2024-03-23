@@ -50,3 +50,11 @@ TEST_CASE("Instantiate solver")
 
   CHECK(!mock->has_outstanding_expects());
 }
+
+
+TEST_CASE("optional_bool")
+{
+  CHECK_EQ(ip2::optional_bool{true}.map(1, 2, 3), 1);
+  CHECK_EQ(ip2::optional_bool{false}.map(1, 2, 3), 2);
+  CHECK_EQ(ip2::optional_bool{}.map(1, 2, 3), 3);
+}
