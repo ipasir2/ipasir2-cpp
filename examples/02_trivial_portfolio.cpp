@@ -54,5 +54,5 @@ void example_02_trivial_portfolio()
     }
   }
 
-  print("Result: {}", ip2::to_string(result.load()));
+  print("  Result: {}", ip2::to_string(result.load()));
 }

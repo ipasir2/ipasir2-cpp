@@ -30,7 +30,25 @@ std::filesystem::path path_of_cnf(std::string_view name);
 
 template<typename... Ts>
 void print(std::format_string<Ts...> format_string, Ts... args) {
-  std::cout << std::format(format_string, std::forward<Ts>(args)...);
+  std::cout << std::format(format_string, std::forward<Ts>(args)...) << "\n";
+}
+
+
+template<typename T>
+std::string to_string(std::vector<T> const& items)
+{
+  if (items.empty()) {
+    return "[]";
+  }
+
+  using std::to_string;
+
+  std::string result = std::string{"["} + to_string(items.front());
+  for (size_t idx = 1; idx < items.size(); ++idx) {
+    result += std::string{", "} + to_string(items[idx]);
+  }
+
+  return result + "]";
 }
 
 
@@ -54,7 +72,7 @@ public:
 
 
   std::optional<std::span<int32_t const>> next_clause();
-
+  int32_t max_var() const;
 
   template<typename Func>
   void for_each_clause(Func&& func) {
@@ -74,4 +92,5 @@ private:
   std::unique_ptr<dimacs_tokens> m_tokens;
   bool m_is_past_header = false;
   std::vector<int32_t> m_clause_buf;
+  int32_t m_max_var = 0;
 };

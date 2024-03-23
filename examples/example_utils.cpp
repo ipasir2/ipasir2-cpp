@@ -209,6 +209,7 @@ std::optional<std::span<int32_t const>> dimacs_parser::next_clause()
 
   while (current_lit.has_value() && current_lit != 0) {
     m_clause_buf.push_back(*current_lit);
+    m_max_var = std::max(m_max_var, std::abs(*current_lit));
     current_lit = next_lit();
   }
 
@@ -217,6 +218,12 @@ std::optional<std::span<int32_t const>> dimacs_parser::next_clause()
   }
 
   return m_clause_buf;
+}
+
+
+int32_t dimacs_parser::max_var() const
+{
+  return m_max_var;
 }
 
 

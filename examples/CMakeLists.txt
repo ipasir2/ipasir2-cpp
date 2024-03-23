@@ -5,6 +5,7 @@ load_minisat()
 add_executable(examples_all
   01_readme.cpp
   02_trivial_portfolio.cpp
+  03_find_backbones.cpp
   example_utils.cpp
   main.cpp
 )
