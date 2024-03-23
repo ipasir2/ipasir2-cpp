@@ -115,6 +115,19 @@ public:
   }
 
 
+  void simulate_export_callback_call(instance_id instance_id,
+                                     std::vector<int32_t> const& clause) override
+  {
+    auto callback_iter = m_export_callbacks.find(instance_id);
+    if (callback_iter == m_export_callbacks.end()) {
+      throw ipasir2_mock_error{"Currently no export callback registered for the given instance"};
+    }
+
+    auto const& [callback, cookie] = callback_iter->second;
+    callback(cookie, clause.data());
+  }
+
+
   std::string const& get_signature() const { return m_signature; }
 
 
@@ -222,6 +235,17 @@ public:
   void clear_terminate_callback(instance_id solver) { m_terminate_callbacks.erase(solver); }
 
 
+  void register_export_callback(instance_id solver,
+                                std::function<void(void*, int32_t const*)> const& callback,
+                                void* cookie)
+  {
+    m_export_callbacks[solver] = {callback, cookie};
+  }
+
+
+  void clear_export_callback(instance_id solver) { m_export_callbacks.erase(solver); }
+
+
   void fail_test(std::string_view message) { m_fail_observer(message); }
 
 
@@ -238,6 +262,9 @@ private:
 
   std::unordered_map<instance_id, std::pair<std::function<int(void*)>, void*>>
       m_terminate_callbacks;
+
+  std::unordered_map<instance_id, std::pair<std::function<void(void*, int32_t const*)>, void*>>
+      m_export_callbacks;
 };
 
 
@@ -426,6 +453,40 @@ ipasir2_errorcode ipasir2_set_terminate(void* solver, void* data, int (*callback
       if (data != nullptr || callback != nullptr) {
         throw ipasir2_mock_error{
             "ipasir2_failed(): expected the callback to be cleared, but it was set"};
+      }
+
+      if (spec.return_value == IPASIR2_E_OK) {
+        s_current_mock->clear_terminate_callback(solver_id);
+      }
+    }
+
+    return spec.return_value;
+  });
+}
+
+
+ipasir2_errorcode
+ipasir2_set_export(void* solver, void* data, int32_t max_len, void (*callback)(void*, int const*))
+{
+  return check_ipasir2_call<set_export_call>(solver, [&](set_export_call const& spec) {
+    instance_id const solver_id = reinterpret_cast<instance_id>(solver);
+
+    if (max_len != spec.max_len) {
+      throw ipasir2_mock_error{"ipasir2_set_export(): unexpected max clause length"};
+    }
+
+    if (spec.expect_nonnull_callback) {
+      if (data == nullptr || callback == nullptr) {
+        throw ipasir2_mock_error{
+            "ipasir2_set_export(): expected to get a callback, but it was cleared"};
+      }
+
+      s_current_mock->register_export_callback(solver_id, callback, data);
+    }
+    else {
+      if (data != nullptr || callback != nullptr) {
+        throw ipasir2_mock_error{
+            "ipasir2_set_export(): expected the callback to be cleared, but it was set"};
       }
 
       if (spec.return_value == IPASIR2_E_OK) {

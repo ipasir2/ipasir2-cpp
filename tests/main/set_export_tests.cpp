@@ -1,0 +1,125 @@
+#include <ipasir2cpp.h>
+
+#include "ipasir2_mock_doctest.h"
+
+#include <doctest.h>
+
+#include <vector>
+
+#if __has_include(<version>)
+#include <version>
+#endif
+
+
+namespace ip2 = ipasir2;
+
+using clause_vec = std::vector<std::vector<int32_t>>;
+
+TEST_CASE("solver::set_export_callback()")
+{
+  auto mock = create_ipasir2_doctest_mock();
+  ip2::ipasir2 api = ip2::ipasir2::create();
+
+  SUBCASE("Successfully set and clear export callback")
+  {
+    mock->expect_init_call(1);
+    auto solver = api.create_solver();
+
+    std::vector<clause_vec> received_clauses{3};
+
+    mock->expect_call(1, set_export_call{true, 1024, IPASIR2_E_OK});
+    solver->set_export_callback(
+        [&](ip2::clause_view clause) {
+          received_clauses[0].emplace_back(clause.begin(), clause.end());
+        },
+        1024);
+    mock->simulate_export_callback_call(1, {-1, 2, 0});
+    CHECK_EQ(received_clauses, std::vector<clause_vec>{{{-1, 2}}, {}, {}});
+
+
+    mock->expect_call(1, set_export_call{true, 512, IPASIR2_E_OK});
+    solver->set_export_callback(
+        [&](ip2::clause_view clause) {
+          received_clauses[1].emplace_back(clause.begin(), clause.end());
+        },
+        512);
+    mock->simulate_export_callback_call(1, {0});
+    CHECK_EQ(received_clauses, std::vector<clause_vec>{{{-1, 2}}, {{}}, {}});
+
+
+    mock->expect_call(1, set_export_call{false, 0, IPASIR2_E_OK});
+    solver->clear_export_callback();
+
+
+    mock->expect_call(1, set_export_call{true, 0, IPASIR2_E_OK});
+    solver->set_export_callback([&](ip2::clause_view clause) {
+      received_clauses[2].emplace_back(clause.begin(), clause.end());
+    });
+    mock->simulate_export_callback_call(1, {3, 5, 0});
+    CHECK_EQ(received_clauses, std::vector<clause_vec>{{{-1, 2}}, {{}}, {{3, 5}}});
+  }
+
+
+  SUBCASE("When set_export_callback() fails, exception is thrown and old callback is not called "
+          "anymore")
+  {
+    mock->expect_init_call(1);
+    auto solver = api.create_solver();
+
+    bool called_old_callback = false;
+
+    mock->expect_call(1, set_export_call{true, 1024, IPASIR2_E_OK});
+    solver->set_export_callback([&](ip2::clause_view) { called_old_callback = true; }, 1024);
+
+    mock->expect_call(1, set_export_call{true, 1024, IPASIR2_E_UNKNOWN});
+    CHECK_THROWS_AS(solver->set_export_callback([&](ip2::clause_view) {}, 1024),
+                    ip2::ipasir2_error const&);
+
+    mock->simulate_export_callback_call(1, {1, 0});
+    CHECK(!called_old_callback);
+  }
+
+
+  SUBCASE("When clear_export_callback() fails, exception is thrown and old callback is not "
+          "called anymore")
+  {
+    mock->expect_init_call(1);
+    auto solver = api.create_solver();
+
+    bool called_old_callback = false;
+
+    mock->expect_call(1, set_export_call{true, 1024, IPASIR2_E_OK});
+    solver->set_export_callback([&](ip2::clause_view) { called_old_callback = true; }, 1024);
+
+    mock->expect_call(1, set_export_call{false, 0, IPASIR2_E_UNKNOWN});
+    CHECK_THROWS_AS(solver->clear_export_callback(), ip2::ipasir2_error const&);
+
+    mock->simulate_export_callback_call(1, {1, 0});
+    CHECK(!called_old_callback);
+  }
+
+
+#if __cpp_lib_span
+  SUBCASE("Use export callback with std::span")
+  {
+    mock->expect_init_call(1);
+    auto solver = api.create_solver();
+
+    std::vector<int32_t> received_clause;
+
+    mock->expect_call(1, set_export_call{true, 1024, IPASIR2_E_OK});
+    solver->set_export_callback(
+        [&](std::span<int32_t const> clause) {
+          received_clause.assign(clause.begin(), clause.end());
+        },
+        1024);
+
+    mock->simulate_export_callback_call(1, {1, 2, 3, 0});
+
+    CHECK_EQ(received_clause, std::vector<int32_t>{1, 2, 3});
+  }
+#endif
+
+
+  CHECK(!mock->has_outstanding_expects());
+}

@@ -77,6 +77,10 @@ TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
 
     mock->expect_call(1, add_call{{1, 2}, IPASIR2_R_NONE, IPASIR2_E_OK});
     mock->expect_call(1, add_call{{-1}, IPASIR2_R_NONE, IPASIR2_E_OK});
+
+    mock->expect_call(1, set_export_call{true, 0, IPASIR2_E_OK});
+    mock->expect_call(1, set_terminate_call{true, IPASIR2_E_OK});
+
     mock->expect_call(1, solve_call{{}, 10, IPASIR2_E_OK});
     mock->expect_call(1, val_call{2, 2, IPASIR2_E_OK});
 
@@ -87,6 +91,10 @@ TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
     solver1->add(1, 2);
     solver1->add(-1);
     solver2->add(-1);
+
+    solver1->set_export_callback([](ip2::clause_view) {}, 0);
+    solver1->set_terminate_callback([]() { return false; });
+
     CHECK_EQ(solver1->solve(), opt_bool{true});
     CHECK_EQ(solver1->lit_value(2), opt_bool{true});
 

@@ -28,6 +28,10 @@
 #include <version>
 #endif
 
+#if __cpp_lib_span
+#include <span>
+#endif
+
 #if defined(_POSIX_C_SOURCE) && __has_include(<dlfcn.h>)
 #include <dlfcn.h>
 #define IPASIR2CPP_HAS_DLOPEN
@@ -138,6 +142,27 @@ inline std::string to_string(optional_bool const& optbool)
 }
 
 
+/// span-like clause view with implicit conversion to std::span, used for C++17 compatibility
+class clause_view {
+public:
+  clause_view(int32_t const* start, int32_t const* stop) : m_start{start}, m_stop{stop} {}
+  int32_t const* begin() const noexcept { return m_start; }
+  int32_t const* end() const noexcept { return m_stop; }
+  bool empty() const noexcept { return m_start == m_stop; }
+
+#if __cpp_lib_span
+  operator std::span<int32_t const>() const noexcept
+  {
+    return std::span<int32_t const>(m_start, m_stop);
+  }
+#endif
+
+private:
+  int32_t const* m_start;
+  int32_t const* m_stop;
+};
+
+
 namespace detail {
   class shared_c_api {
   public:
@@ -150,6 +175,7 @@ namespace detail {
       load_sym(result.failed, "ipasir2_failed", result);
       load_sym(result.init, "ipasir2_init", result);
       load_sym(result.release, "ipasir2_release", result);
+      load_sym(result.set_export, "ipasir2_set_export", result);
       load_sym(result.set_terminate, "ipasir2_set_terminate", result);
       load_sym(result.signature, "ipasir2_signature", result);
       load_sym(result.solve, "ipasir2_solve", result);
@@ -167,6 +193,7 @@ namespace detail {
       result.failed = &ipasir2_failed;
       result.init = &ipasir2_init;
       result.release = &ipasir2_release;
+      result.set_export = &ipasir2_set_export;
       result.set_terminate = &ipasir2_set_terminate;
       result.signature = &ipasir2_signature;
       result.solve = &ipasir2_solve;
@@ -179,6 +206,7 @@ namespace detail {
     decltype(&ipasir2_failed) failed = nullptr;
     decltype(&ipasir2_init) init = nullptr;
     decltype(&ipasir2_release) release = nullptr;
+    decltype(&ipasir2_set_export) set_export = nullptr;
     decltype(&ipasir2_set_terminate) set_terminate = nullptr;
     decltype(&ipasir2_signature) signature = nullptr;
     decltype(&ipasir2_solve) solve = nullptr;
@@ -280,6 +308,16 @@ namespace detail {
     default:
       return optional_bool();
     }
+  }
+
+
+  inline clause_view clause_view_from_zero_terminated(int32_t const* start)
+  {
+    int32_t const* iter = start;
+    while (*iter != 0) {
+      ++iter;
+    }
+    return clause_view{start, iter};
   }
 }
 
@@ -461,6 +499,33 @@ public:
   }
 
 
+  template <typename Func>
+  void set_export_callback(Func&& callback, size_t max_size = 0)
+  {
+    // Reset the callback function so the old callback is not called anymore in case the IPASIR call fails
+    m_export_callback = {};
+
+    auto result
+        = m_api.set_export(m_handle.get(), this, max_size, [](void* data, int32_t const* clause) {
+            solver* s = reinterpret_cast<solver*>(data);
+            if (s->m_export_callback) {
+              return s->m_export_callback(detail::clause_view_from_zero_terminated(clause));
+            }
+          });
+    detail::throw_if_failed(result, "ipasir2_set_export");
+
+    m_export_callback = callback;
+  }
+
+
+  void clear_export_callback()
+  {
+    m_export_callback = {};
+    detail::throw_if_failed(m_api.set_export(m_handle.get(), nullptr, 0, nullptr),
+                            "ipasir2_set_export");
+  }
+
+
   // `solver` objects manage IPASIR2 resources. Also, pointers to `solver` objects
   // are passed to IPASIR2 solvers as cookies for callbacks. Hence, both copy and
   // move operators are deleted for `solver`.
@@ -494,6 +559,7 @@ private:
   std::vector<int32_t> m_clause_buf;
 
   std::function<bool()> m_terminate_callback;
+  std::function<void(clause_view)> m_export_callback;
 };
 
 
