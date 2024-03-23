@@ -123,6 +123,15 @@ private:
 };
 
 
+inline std::string to_string(optional_bool const& optbool)
+{
+  if (optbool.has_value()) {
+    return optbool.unwrap() ? "sat" : "unsat";
+  }
+  return "unknown";
+}
+
+
 namespace detail {
   class shared_c_api {
   public:
