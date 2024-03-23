@@ -103,7 +103,7 @@ public:
   {
     auto callback_iter = m_terminate_callbacks.find(instance_id);
     if (callback_iter == m_terminate_callbacks.end()) {
-      throw ipasir2_mock_error{"Currently no callback registered for the given instance"};
+      throw ipasir2_mock_error{"Currently no terminate callback registered for the given instance"};
     }
 
     auto const& [callback, cookie] = callback_iter->second;
@@ -444,7 +444,7 @@ ipasir2_errorcode ipasir2_set_terminate(void* solver, void* data, int (*callback
     if (spec.expect_nonnull_callback) {
       if (data == nullptr || callback == nullptr) {
         throw ipasir2_mock_error{
-            "ipasir2_failed(): expected to get a callback, but it was cleared"};
+            "ipasir2_set_terminate(): expected to get a callback, but it was cleared"};
       }
 
       s_current_mock->register_terminate_callback(solver_id, callback, data);
@@ -452,7 +452,7 @@ ipasir2_errorcode ipasir2_set_terminate(void* solver, void* data, int (*callback
     else {
       if (data != nullptr || callback != nullptr) {
         throw ipasir2_mock_error{
-            "ipasir2_failed(): expected the callback to be cleared, but it was set"};
+            "ipasir2_set_terminate(): expected the callback to be cleared, but it was set"};
       }
 
       if (spec.return_value == IPASIR2_E_OK) {

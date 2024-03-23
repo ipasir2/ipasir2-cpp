@@ -46,7 +46,7 @@ TEST_CASE("solver::set_terminate_callback()")
   }
 
 
-  SUBCASE("Exception is thrown when set_terminate_callback fails")
+  SUBCASE("Exception is thrown when set_terminate_callback() fails")
   {
     mock->expect_init_call(1);
     auto solver = api.create_solver();
