@@ -5,7 +5,7 @@
 namespace ip2 = ipasir2;
 
 
-int example_01_readme()
+void example_01_readme()
 {
   PRINT_FILENAME();
 
@@ -19,16 +19,13 @@ int example_01_readme()
     solver->add(-2);
 
     if (auto result = solver->solve(); result.has_value()) {
-      std::cout << std::format("  Result: {}\n", result.unwrap() ? "SAT" : "UNSAT");
+      std::cout << std::format("Result: {}\n", result.unwrap() ? "SAT" : "UNSAT");
     }
     else {
-      std::cout << "  The solver did not produce a result.\n";
+      std::cout << "The solver did not produce a result.\n";
     }
   }
   catch (ip2::ipasir2_error const& error) {
-    std::cerr << std::format("  Could not solve the formula: {}\n", error.what());
-    return 1;
+    std::cerr << std::format("Could not solve the formula: {}\n", error.what());
   }
-
-  return 0;
 }

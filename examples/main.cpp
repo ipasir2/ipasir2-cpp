@@ -1,4 +1,4 @@
-int example_01_readme();
+void example_01_readme();
 void example_02_trivial_portfolio();
 void example_03_find_backbones();
 
