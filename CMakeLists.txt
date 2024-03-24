@@ -5,6 +5,10 @@ cmake_minimum_required(VERSION 3.10)
 project(ipasir2-cpp-tests)
 
 
+option(WITH_DOXYGEN "Add a target `doxygen` building Doxygen files for ipasir2cpp.h" OFF)
+
+include(buildutils/doxygen.cmake)
+
 # ipasir2cpp.h can be used with C++17, but has extra features when
 # used with C++20
 set(CMAKE_CXX_STANDARD 20)
