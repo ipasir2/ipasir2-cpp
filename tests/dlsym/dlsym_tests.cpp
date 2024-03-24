@@ -99,7 +99,7 @@ TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
     CHECK_EQ(solver1->lit_value(2), opt_bool{true});
 
     CHECK_EQ(solver2->solve(std::array{1}), opt_bool{false});
-    CHECK(solver2->lit_failed(1));
+    CHECK(solver2->assumption_failed(1));
   }
 
   CHECK(!mock->has_outstanding_expects());

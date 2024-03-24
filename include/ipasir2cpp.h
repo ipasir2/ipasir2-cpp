@@ -475,6 +475,8 @@ public:
 
 
   /// \brief Returns the literal's value in the current assignment.
+  ///
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   optional_bool lit_value(int32_t lit) const
   {
     int32_t result = 0;
@@ -496,8 +498,10 @@ public:
 
 
   /// \brief Checks if given assumption literal was used to prove the unsatisfiability
-  //         in the last invocation of solve().
-  bool lit_failed(int32_t lit) const
+  ///        in the last invocation of solve().
+  ///
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
+  bool assumption_failed(int32_t lit) const
   {
     int32_t result = 0;
     detail::throw_if_failed(m_api.failed(m_handle.get(), lit, &result), "ipasir2_failed");

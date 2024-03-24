@@ -53,7 +53,7 @@ TEST_CASE("solver::lit_value()")
 }
 
 
-TEST_CASE("solver::lit_failed()")
+TEST_CASE("solver::assumption_failed()")
 {
   auto mock = create_ipasir2_doctest_mock();
   ip2::ipasir2 api = ip2::ipasir2::create();
@@ -66,8 +66,8 @@ TEST_CASE("solver::lit_failed()")
     mock->expect_call(1, failed_call{-1, 0, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    CHECK(solver->lit_failed(2));
-    CHECK_FALSE(solver->lit_failed(-1));
+    CHECK(solver->assumption_failed(2));
+    CHECK_FALSE(solver->assumption_failed(-1));
   }
 
 
@@ -77,7 +77,7 @@ TEST_CASE("solver::lit_failed()")
     mock->expect_call(1, failed_call{2, 0, IPASIR2_E_INVALID_ARGUMENT});
 
     auto solver = api.create_solver();
-    CHECK_THROWS_AS(solver->lit_failed(2), ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->assumption_failed(2), ip2::ipasir2_error const&);
   }
 
 
@@ -88,8 +88,8 @@ TEST_CASE("solver::lit_failed()")
     mock->expect_call(1, failed_call{13, 2, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    CHECK_THROWS_AS(solver->lit_failed(13), ip2::ipasir2_error const&);
-    CHECK_THROWS_AS(solver->lit_failed(13), ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->assumption_failed(13), ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->assumption_failed(13), ip2::ipasir2_error const&);
   }
 
 
