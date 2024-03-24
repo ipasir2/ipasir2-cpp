@@ -4,6 +4,8 @@
 // This file is subject to the MIT license (https://spdx.org/licenses/MIT.html).
 // SPDX-License-Identifier: MIT
 
+/// \file
+
 #pragma once
 
 #if __cplusplus < 201703L
@@ -85,7 +87,7 @@ private:
 };
 
 
-/// Restricted version of std::optional<bool>
+/// \brief Restricted version of std::optional<bool>
 ///
 /// In contrast to std::bool, this class does not have implicit
 /// conversion to bool, no comparison operators for bool, and no
@@ -94,11 +96,11 @@ class optional_bool {
 public:
   explicit optional_bool(bool value) : m_value{value} {}
 
-  /// Constructs an empty optional_bool
+  /// \brief Constructs an empty optional_bool
   optional_bool() {}
 
 
-  /// Returns the contained value.
+  /// \brief Returns the contained value.
   ///
   /// \throws std::bad_optional_access if the object has no value.
   bool unwrap() const { return m_value.value(); }
@@ -142,7 +144,7 @@ inline std::string to_string(optional_bool const& optbool)
 }
 
 
-/// span-like clause view with implicit conversion to std::span, used for C++17 compatibility
+/// \brief Span-like clause view with implicit conversion to std::span, used for C++17 compatibility
 class clause_view {
 public:
   clause_view(int32_t const* start, int32_t const* stop) : m_start{start}, m_stop{stop} {}
@@ -332,9 +334,12 @@ enum class redundancy {
 };
 
 
+/// \brief Class representing an IPASIR-2 solver instance.
+///
+/// Objects of this class can neither be moved nor copied.
 class solver {
 public:
-  /// Adds the literals in [start, stop) as a clause to the solver.
+  /// \brief Adds the literals in [start, stop) as a clause to the solver.
   ///
   /// \tparam Iter This type can be one of:
   ///               - iterator type with values convertible to `int32_t`
@@ -351,7 +356,7 @@ public:
   }
 
 
-  /// Adds a clause to the solver.
+  /// \brief Adds a clause to the solver.
   ///
   /// For example, this function can be used to add literals stored in a `std::vector<int32_t>`,
   /// or in a custom clause type (see requirements below).
@@ -385,6 +390,12 @@ private:
 
 
 public:
+  /// \brief Adds a clause to the solver.
+  ///
+  /// The arguments of this functions are literals, optionally followed
+  /// by a single `redundancy` argument.
+  ///
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename... Ts>
   void add(int32_t lit, Ts... rest)
   {
@@ -404,6 +415,12 @@ public:
   }
 
 
+  /// \brief Checks if the problem is satisfiable under the given assumptions.
+  ///
+  /// \returns If the solver produced a result, a boolean value is returned representing
+  ///          the satisfiability of the problem instance. Otherwise, nothing is returned.
+  ///
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename Iter, typename = detail::enable_unless_integral_t<Iter>>
   optional_bool solve(Iter assumptions_start, Iter assumptions_stop)
   {
@@ -416,6 +433,12 @@ public:
   }
 
 
+  /// \brief Checks if the problem instance is satisfiable under the given assumptions.
+  ///
+  /// \returns If the solver produced a result, a boolean value is returned representing
+  ///          the satisfiability of the problem instance. Otherwise, nothing is returned.
+  ///
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename LitContainer, typename = detail::enable_if_lit_container_t<LitContainer>>
   optional_bool solve(LitContainer const& assumptions)
   {
@@ -423,14 +446,26 @@ public:
   }
 
 
+  /// \brief Checks if the problem is satisfiable under the given assumptions.
+  ///
+  /// \returns If the solver produced a result, a boolean value is returned representing
+  ///          the satisfiability of the problem instance. Otherwise, nothing is returned.
+  ///
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename... Ints, typename = detail::enable_if_all_integral_t<Ints...>>
-  optional_bool solve(int32_t assumption, Ints... rest)
+  optional_bool solve(int32_t assumption, Ints... assumptions_rest)
   {
-    std::array assumptions{assumption, rest...};
+    std::array assumptions{assumption, assumptions_rest...};
     return solve(assumptions);
   }
 
 
+  /// \brief Checks if the problem is satisfiable.
+  ///
+  /// \returns If the solver produced a result, a boolean value is returned representing
+  ///          the satisfiability of the problem instance. Otherwise, nothing is returned.
+  ///
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   optional_bool solve()
   {
     int32_t result = 0;
@@ -439,6 +474,7 @@ public:
   }
 
 
+  /// \brief Returns the literal's value in the current assignment.
   optional_bool lit_value(int32_t lit) const
   {
     int32_t result = 0;
@@ -459,6 +495,8 @@ public:
   }
 
 
+  /// \brief Checks if given assumption literal was used to prove the unsatisfiability
+  //         in the last invocation of solve().
   bool lit_failed(int32_t lit) const
   {
     int32_t result = 0;
@@ -528,9 +566,9 @@ public:
   }
 
 
-  /// Returns the IPASIR-2 solver handle. This handle is valid for the lifetime of the
-  /// `solver` object.
+  /// \brief Returns the IPASIR-2 solver handle.
   ///
+  /// The handle is valid for the lifetime of the `solver` object.
   /// This function can be used to access non-standard extensions of the IPASIR-2 API.
   void* get_ipasir2_handle() { return m_handle.get(); }
 
@@ -572,6 +610,10 @@ private:
 };
 
 
+/// \brief Class representing an IPASIR-2 implementation.
+///
+/// Objects of this class can be used to create solver instances, and
+/// to call IPASIR-2 functions that are not tied to a solver instance.
 class ipasir2 {
 public:
   template <typename = void /* prevent instantiation unless called */>
