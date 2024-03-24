@@ -264,11 +264,17 @@ namespace detail {
   using enable_unless_integral_t = std::enable_if_t<!std::is_integral_v<T>>;
 
 
+  using std::begin;
+  using std::end;
+
+  // Unfortunately, this currently doesn't support C-style arrays with known size.
+  // std::begin and std::end have specializations for them, but they can't be found
+  // via ADL. However, using C-style arrays should be a niche use case, especially
+  // since std::array can be used instead.
   // TODO: only enable if the container actually contains literals
-  // TODO: support ADL lookup of cbegin and cend
   template <typename T>
-  using enable_if_lit_container_t = std::void_t<decltype(std::cbegin(std::declval<T>())),
-                                                decltype(std::cend(std::declval<T>()))>;
+  using enable_if_lit_container_t
+      = std::void_t<decltype(begin(std::declval<T>())), decltype(end(std::declval<T>()))>;
 
 
 #if __cpp_lib_concepts
@@ -366,7 +372,7 @@ public:
   /// the buffer to the solver. For C++17 and earlier, the clause is copied unless `LitContainer`
   /// is a `std::vector`, or has pointer-type iterators.
   ///
-  /// \tparam LitContainer A type for which `std::cbegin()` and `std::cend()` functions return either
+  /// \tparam LitContainer A type for which `begin()` and `end()` functions return either
   ///                       - iterators with values convertible to `int32_t`
   ///                       - pointers convertible to `int32_t const*`.
   ///
@@ -374,7 +380,9 @@ public:
   template <typename LitContainer, typename = detail::enable_if_lit_container_t<LitContainer>>
   void add(LitContainer const& container, redundancy red = redundancy::none)
   {
-    add(std::cbegin(container), std::cend(container), red);
+    using std::begin;
+    using std::end;
+    add(begin(container), end(container), red);
   }
 
 
@@ -442,7 +450,9 @@ public:
   template <typename LitContainer, typename = detail::enable_if_lit_container_t<LitContainer>>
   optional_bool solve(LitContainer const& assumptions)
   {
-    return solve(std::cbegin(assumptions), std::cend(assumptions));
+    using std::begin;
+    using std::end;
+    return solve(begin(assumptions), end(assumptions));
   }
 
 

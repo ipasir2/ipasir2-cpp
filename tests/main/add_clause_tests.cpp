@@ -1,5 +1,6 @@
 #include <ipasir2cpp.h>
 
+#include "custom_types.h"
 #include "ipasir2_mock_doctest.h"
 
 #include <list>
@@ -132,21 +133,25 @@ TEST_CASE("solver::add() functions")
   }
 
 
-  SUBCASE("Successfully add clauses expressed as C arrays")
+  SUBCASE("Successfully add clauses with custom types")
   {
     mock->expect_init_call(1);
-    mock->expect_call(1, add_call{{-1}, IPASIR2_R_NONE, IPASIR2_E_OK});
-    mock->expect_call(1, add_call{{1, 2}, IPASIR2_R_NONE, IPASIR2_E_OK});
-    mock->expect_call(1, add_call{{1, 2, -3}, IPASIR2_R_NONE, IPASIR2_E_OK});
 
-    int32_t clause1[]{-1};
-    int32_t clause2[]{1, 2};
-    int32_t clause3[]{1, 2, -3};
+    mock->expect_call(1, add_call{{1, 2}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, 3}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, 4}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, 5}, IPASIR2_R_NONE, IPASIR2_E_OK});
+
+    custom_lit_container_1 clause1{{1, 2}};
+    custom_lit_container_1 const clause2{{1, 3}};
+    adl_test::custom_lit_container_2 clause3{{1, 4}};
+    adl_test::custom_lit_container_2 const clause4{{1, 5}};
 
     auto solver = api.create_solver();
     solver->add(clause1);
     solver->add(clause2);
     solver->add(clause3);
+    solver->add(clause4);
   }
 
 

@@ -6,6 +6,7 @@ add_executable(examples_all
   01_readme.cpp
   02_trivial_portfolio.cpp
   03_find_backbones.cpp
+  04_custom_types.cpp
   example_utils.cpp
   main.cpp
 )

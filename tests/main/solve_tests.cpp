@@ -1,5 +1,6 @@
 #include <ipasir2cpp.h>
 
+#include "custom_types.h"
 #include "ipasir2_mock_doctest.h"
 
 #include <list>
@@ -83,10 +84,28 @@ TEST_CASE("solver::solve() functions")
     mock->expect_call(1, solve_call{assumptions, 10, IPASIR2_E_OK});
     CHECK_EQ(solver->solve(assumptions_span), optional_bool{true});
 #endif
+  }
 
-    int assumptions_c_arr[]{1, 2};
+
+  SUBCASE("Successfully solve with custom assumption-container types")
+  {
+    mock->expect_init_call(1);
+
     mock->expect_call(1, solve_call{{1, 2}, 10, IPASIR2_E_OK});
-    CHECK_EQ(solver->solve(assumptions_c_arr), optional_bool{true});
+    mock->expect_call(1, solve_call{{1, 3}, 10, IPASIR2_E_OK});
+    mock->expect_call(1, solve_call{{1, 4}, 10, IPASIR2_E_OK});
+    mock->expect_call(1, solve_call{{1, 5}, 10, IPASIR2_E_OK});
+
+    custom_lit_container_1 assum1{{1, 2}};
+    custom_lit_container_1 const assum2{{1, 3}};
+    adl_test::custom_lit_container_2 assum3{{1, 4}};
+    adl_test::custom_lit_container_2 const assum4{{1, 5}};
+
+    auto solver = api.create_solver();
+    CHECK_EQ(solver->solve(assum1), optional_bool{true});
+    CHECK_EQ(solver->solve(assum2), optional_bool{true});
+    CHECK_EQ(solver->solve(assum3), optional_bool{true});
+    CHECK_EQ(solver->solve(assum4), optional_bool{true});
   }
 
 
