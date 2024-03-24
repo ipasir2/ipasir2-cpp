@@ -21,6 +21,8 @@ add_library(ipasir2cpp INTERFACE)
 target_include_directories(ipasir2cpp INTERFACE include)
 target_link_libraries(ipasir2cpp INTERFACE ipasir2)
 
-add_subdirectory(examples)
 add_subdirectory(testdeps)
 add_subdirectory(tests)
+
+add_subdirectory(examples)
+
