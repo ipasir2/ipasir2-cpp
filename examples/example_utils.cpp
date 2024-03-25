@@ -20,8 +20,6 @@ std::chrono::milliseconds stopwatch::time_since_start() const
 }
 
 
-// TODO: proper error handling for DIMACS parser
-
 struct dimacs_token {
   std::optional<int32_t> literal;
   std::string_view string;
@@ -31,18 +29,12 @@ struct dimacs_token {
 };
 
 
-class bad_token_error : public std::exception {
-public:
-  char const* what() const noexcept override { return "bad token"; }
-};
-
-
 class dimacs_tokens {
 public:
   explicit dimacs_tokens(fs::path const& path) : m_file{fopen(path.c_str(), "r"), fclose}
   {
     if (!m_file) {
-      throw std::runtime_error{std::string{"Could not open file "} + path.string()};
+      throw parse_error{std::string{"Could not open file "} + path.string()};
     }
   }
 
@@ -57,8 +49,9 @@ public:
       }
 
       if (m_string_buf == "c") {
+        // Encountered a comment, skipping to end of line
         if (char_past_word != '\n') {
-          skip_to_next_line();
+          skip_chars_while([](char c) { return c != '\n'; });
         }
         continue;
       }
@@ -71,7 +64,7 @@ public:
           return dimacs_token{std::stoi(m_string_buf), "", 0, 0};
         }
         catch (std::out_of_range const&) {
-          throw bad_token_error{};
+          throw parse_error{"invalid token"};
         }
       }
 
@@ -86,6 +79,11 @@ private:
   std::optional<char> read_char()
   {
     int result = fgetc(m_file.get());
+
+    if (result == EOF && ferror(m_file.get()) != 0) {
+      throw parse_error{"I/O error"};
+    }
+
     return result != EOF ? std::make_optional(static_cast<char>(result)) : std::nullopt;
   }
 
@@ -93,7 +91,7 @@ private:
   std::optional<char> read_word()
   {
     m_string_buf.clear();
-    std::optional<char> next = skip_whitespace();
+    std::optional<char> next = skip_chars_while(isspace);
     if (!next.has_value()) {
       return std::nullopt;
     }
@@ -107,26 +105,14 @@ private:
   }
 
 
-  std::optional<char> skip_whitespace()
+  template <typename Func>
+  std::optional<char> skip_chars_while(Func&& char_predicate)
   {
-    int c = ' ';
-    while (isspace(c)) {
-      c = fgetc(m_file.get());
-      if (c == EOF) {
-        return std::nullopt;
-      }
+    std::optional<char> next = ' ';
+    while (next.has_value() && char_predicate(*next)) {
+      next = read_char();
     }
-
-    return static_cast<char>(c);
-  }
-
-
-  void skip_to_next_line()
-  {
-    int c = ' ';
-    while (c != '\n' && c != EOF) {
-      c = fgetc(m_file.get());
-    }
+    return next;
   }
 
 
@@ -171,30 +157,25 @@ void dimacs_parser::read_and_drop_int_token()
 
 std::optional<int32_t> dimacs_parser::next_lit()
 {
-  try {
-    if (!m_is_past_header) {
-      read_and_drop_string_token("p");
-      read_and_drop_string_token("cnf");
-      read_and_drop_int_token();
-      read_and_drop_int_token();
-      m_is_past_header = true;
-    }
-
-    std::optional<dimacs_token> lit_token = m_tokens->next_token();
-
-    if (!lit_token.has_value()) {
-      return std::nullopt;
-    }
-
-    if (!lit_token->literal.has_value()) {
-      throw parse_error{"invalid token"};
-    }
-
-    return lit_token->literal;
+  if (!m_is_past_header) {
+    read_and_drop_string_token("p");
+    read_and_drop_string_token("cnf");
+    read_and_drop_int_token();
+    read_and_drop_int_token();
+    m_is_past_header = true;
   }
-  catch (bad_token_error const& error) {
-    throw parse_error{error.what()};
+
+  std::optional<dimacs_token> lit_token = m_tokens->next_token();
+
+  if (!lit_token.has_value()) {
+    return std::nullopt;
   }
+
+  if (!lit_token->literal.has_value()) {
+    throw parse_error{"invalid token"};
+  }
+
+  return lit_token->literal;
 }
 
 
