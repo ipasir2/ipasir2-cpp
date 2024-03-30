@@ -52,6 +52,19 @@ struct set_export_call {
 };
 
 
+struct options_call {
+  ipasir2_errorcode return_value = IPASIR2_E_OK;
+};
+
+
+struct set_option_call {
+  std::string name;
+  int64_t value = 0;
+  int64_t index = 0;
+  ipasir2_errorcode return_value = IPASIR2_E_OK;
+};
+
+
 class ipasir2_mock_error : public std::logic_error {
 public:
   explicit ipasir2_mock_error(std::string_view message);
@@ -79,8 +92,15 @@ public:
   virtual void expect_init_call(instance_id instance_id) = 0;
   virtual void expect_init_call_and_fail(ipasir2_errorcode result) = 0;
 
-  using any_call = std::
-      variant<add_call, solve_call, val_call, failed_call, set_terminate_call, set_export_call>;
+  using any_call = std::variant<add_call,
+                                solve_call,
+                                val_call,
+                                failed_call,
+                                set_terminate_call,
+                                set_export_call,
+                                options_call,
+                                set_option_call>;
+
   virtual void expect_call(instance_id instance_id, any_call const& call) = 0;
 
   virtual void set_signature(std::string_view signature, ipasir2_errorcode result) = 0;
@@ -93,6 +113,8 @@ public:
   virtual void simulate_export_callback_call(instance_id instance_id,
                                              std::vector<int32_t> const& clause)
       = 0;
+
+  virtual void set_options(instance_id instance_id, std::vector<ipasir2_option> const& options) = 0;
 
   virtual void* get_ipasir2_handle(instance_id instance_id) = 0;
 

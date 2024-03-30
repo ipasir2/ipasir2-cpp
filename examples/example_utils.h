@@ -8,10 +8,19 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <syncstream>
 #include <vector>
 
+
+template <typename... Ts>
+void print(std::format_string<Ts...> format_string, Ts... args)
+{
+  std::osyncstream{std::cout} << std::format(format_string, std::forward<Ts>(args)...) << "\n";
+}
+
+
 // clang-format off
-#define PRINT_FILENAME() do { std::cout << std::format("Running example: {}\n", __FILE__); } while(0)
+#define PRINT_FILENAME() do { print("Running example: {}", __FILE__); } while(0)
 // clang_format on
 
 
@@ -27,12 +36,6 @@ private:
 
 
 std::filesystem::path path_of_cnf(std::string_view name);
-
-
-template<typename... Ts>
-void print(std::format_string<Ts...> format_string, Ts... args) {
-  std::cout << std::format(format_string, std::forward<Ts>(args)...) << "\n";
-}
 
 
 template<typename T>

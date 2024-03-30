@@ -88,8 +88,8 @@ following functions:
  - [x] `ipasir2_signature`
  - [x] `ipasir2_init`
  - [x] `ipasir2_release`
- - [ ] `ipasir2_options`
- - [ ] `ipasir2_set_option`
+ - [x] `ipasir2_options`
+ - [x] `ipasir2_set_option`
  - [x] `ipasir2_add`
  - [x] `ipasir2_solve`
  - [x] `ipasir2_val`
@@ -105,7 +105,7 @@ Features:
  - [x] Support for `dlopen()`
  - [x] Support for custom clause types
  - [ ] Support for custom literal types
- - [x] Support for IPASIR-1 functionality
+ - [x] Support for functionality also covered by IPASIR-1
  - [ ] Options API
  - [ ] Support for importing clauses
  - [ ] Support for observing the current partial assignment

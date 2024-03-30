@@ -176,8 +176,10 @@ namespace detail {
       load_sym(result.add, "ipasir2_add", result);
       load_sym(result.failed, "ipasir2_failed", result);
       load_sym(result.init, "ipasir2_init", result);
+      load_sym(result.options, "ipasir2_options", result);
       load_sym(result.release, "ipasir2_release", result);
       load_sym(result.set_export, "ipasir2_set_export", result);
+      load_sym(result.set_option, "ipasir2_set_option", result);
       load_sym(result.set_terminate, "ipasir2_set_terminate", result);
       load_sym(result.signature, "ipasir2_signature", result);
       load_sym(result.solve, "ipasir2_solve", result);
@@ -194,8 +196,10 @@ namespace detail {
       result.add = &ipasir2_add;
       result.failed = &ipasir2_failed;
       result.init = &ipasir2_init;
+      result.options = &ipasir2_options;
       result.release = &ipasir2_release;
       result.set_export = &ipasir2_set_export;
+      result.set_option = &ipasir2_set_option;
       result.set_terminate = &ipasir2_set_terminate;
       result.signature = &ipasir2_signature;
       result.solve = &ipasir2_solve;
@@ -207,8 +211,10 @@ namespace detail {
     decltype(&ipasir2_add) add = nullptr;
     decltype(&ipasir2_failed) failed = nullptr;
     decltype(&ipasir2_init) init = nullptr;
+    decltype(&ipasir2_options) options = nullptr;
     decltype(&ipasir2_release) release = nullptr;
     decltype(&ipasir2_set_export) set_export = nullptr;
+    decltype(&ipasir2_set_option) set_option = nullptr;
     decltype(&ipasir2_set_terminate) set_terminate = nullptr;
     decltype(&ipasir2_signature) signature = nullptr;
     decltype(&ipasir2_solve) solve = nullptr;
@@ -337,6 +343,22 @@ enum class redundancy {
   forgettable = IPASIR2_R_FORGETTABLE,
   equisatisfiable = IPASIR2_R_EQUISATISFIABLE,
   equivalent = IPASIR2_R_EQUIVALENT
+};
+
+
+class option {
+public:
+  std::string_view name() const { return m_solver_handle->name; }
+  int64_t min_value() const { return m_solver_handle->min; }
+  int64_t max_value() const { return m_solver_handle->max; }
+  bool is_tunable() const { return m_solver_handle->tunable != 0; }
+  bool is_indexed() const { return m_solver_handle->indexed != 0; }
+
+private:
+  explicit option(ipasir2_option const& solver_handle) : m_solver_handle{&solver_handle} {}
+
+  friend class solver;
+  ipasir2_option const* m_solver_handle;
 };
 
 
@@ -580,6 +602,54 @@ public:
   }
 
 
+  option get_option(std::string_view name) const
+  {
+    ensure_options_cached();
+
+    auto result = std::find_if(m_cached_options->begin(),
+                               m_cached_options->end(),
+                               [&](option const& candidate) { return candidate.name() == name; });
+
+    if (result == m_cached_options->end()) {
+      throw ipasir2_error{"the solver does not implement the given option"};
+    }
+
+    return *result;
+  }
+
+
+  std::vector<option> const& get_options() const
+  {
+    ensure_options_cached();
+
+    return *m_cached_options;
+  }
+
+
+  bool has_option(std::string_view name) const
+  {
+    ensure_options_cached();
+
+    return std::find_if(m_cached_options->begin(),
+                        m_cached_options->end(),
+                        [&](option const& candidate) { return candidate.name() == name; })
+           != m_cached_options->end();
+  }
+
+
+  void set_option(option const& option, int64_t value, int64_t index = 0)
+  {
+    detail::throw_if_failed(m_api.set_option(m_handle.get(), option.m_solver_handle, value, index),
+                            "ipasir2_set_option");
+  }
+
+
+  void set_option(std::string_view name, int64_t value, int64_t index = 0)
+  {
+    set_option(get_option(name), value, index);
+  }
+
+
   /// \brief Returns the IPASIR-2 solver handle.
   ///
   /// The handle is valid for the lifetime of the `solver` object.
@@ -613,6 +683,22 @@ private:
     m_handle = unique_ipasir2_handle{handle, m_api.release};
   }
 
+
+  void ensure_options_cached() const
+  {
+    if (!m_cached_options.has_value()) {
+      ipasir2_option const* option_cursor = nullptr;
+      detail::throw_if_failed(m_api.options(m_handle.get(), &option_cursor), "ipasir2_options");
+
+      m_cached_options = std::vector<option>{};
+
+      while (option_cursor->name != nullptr) {
+        m_cached_options->push_back(option{*option_cursor});
+        ++option_cursor;
+      }
+    }
+  }
+
   detail::shared_c_api m_api;
 
   using unique_ipasir2_handle = std::unique_ptr<void, decltype(&ipasir2_release)>;
@@ -621,6 +707,8 @@ private:
 
   std::function<bool()> m_terminate_callback;
   std::function<void(clause_view)> m_export_callback;
+
+  mutable std::optional<std::vector<option>> m_cached_options;
 };
 
 
@@ -678,5 +766,4 @@ private:
 
   detail::shared_c_api m_api;
 };
-
 }

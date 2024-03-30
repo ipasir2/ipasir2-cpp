@@ -22,6 +22,7 @@ ipasir2_mock_error::ipasir2_mock_error(std::string_view message) : std::logic_er
 struct mock_solver_instance {
   bool is_initialized = false;
   bool is_released = false;
+  std::vector<ipasir2_option> options;
   std::queue<ipasir2_mock::any_call> expected_calls;
 };
 
@@ -125,6 +126,12 @@ public:
 
     auto const& [callback, cookie] = callback_iter->second;
     callback(cookie, clause.data());
+  }
+
+
+  void set_options(instance_id instance_id, std::vector<ipasir2_option> const& options) override
+  {
+    m_instances[instance_id].options = options;
   }
 
 
@@ -250,6 +257,17 @@ public:
 
 
   void clear_export_callback(instance_id solver) { m_export_callbacks.erase(solver); }
+
+
+  ipasir2_option const* get_options(instance_id solver) const
+  {
+    auto instance_iter = m_instances.find(solver);
+    if (instance_iter == m_instances.end()) {
+      throw ipasir2_mock_error{"IPASIR2 function called for unknown solver object"};
+    }
+
+    return instance_iter->second.options.data();
+  }
 
 
   void fail_test(std::string_view message) { m_fail_observer(message); }
@@ -498,6 +516,39 @@ ipasir2_set_export(void* solver, void* data, int32_t max_len, void (*callback)(v
       if (spec.return_value == IPASIR2_E_OK) {
         s_current_mock->clear_terminate_callback(solver_id);
       }
+    }
+
+    return spec.return_value;
+  });
+}
+
+
+ipasir2_errorcode ipasir2_options(void* solver, ipasir2_option const** options)
+{
+  return check_ipasir2_call<options_call>(solver, [&](options_call const& spec) {
+    instance_id const solver_id = reinterpret_cast<instance_id>(solver);
+    *options = s_current_mock->get_options(solver_id);
+    return spec.return_value;
+  });
+}
+
+
+ipasir2_errorcode
+ipasir2_set_option(void* solver, ipasir2_option const* handle, int64_t value, int64_t index)
+{
+  return check_ipasir2_call<set_option_call>(solver, [&](set_option_call const& spec) {
+    instance_id const solver_id = reinterpret_cast<instance_id>(solver);
+
+    if (std::string_view{handle->name} != spec.name) {
+      throw ipasir2_mock_error{"unexpected name"};
+    }
+
+    if (value != spec.value) {
+      throw ipasir2_mock_error{"unexpected value"};
+    }
+
+    if (index != spec.index) {
+      throw ipasir2_mock_error{"unexpected index"};
     }
 
     return spec.return_value;

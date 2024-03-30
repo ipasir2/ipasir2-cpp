@@ -64,6 +64,10 @@ TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
 
   ip2::ipasir2 api = ip2::ipasir2::create(library_file);
 
+  std::vector<ipasir2_option> const test_options
+      = {ipasir2_option{"test_option_1", -1000, 1000, IPASIR2_S_CONFIG, 1, 0, nullptr},
+         ipasir2_option{"test_option_2", 0, 100, IPASIR2_S_SOLVING, 0, 1, nullptr}};
+
   using opt_bool = ip2::optional_bool;
 
   mock->set_signature("test 1.0", IPASIR2_E_OK);
@@ -75,6 +79,12 @@ TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
     mock->expect_init_call(2);
     auto solver2 = api.create_solver();
 
+    mock->set_options(1, test_options);
+    mock->set_options(2, test_options);
+
+    mock->expect_call(1, options_call{IPASIR2_E_OK});
+    mock->expect_call(1, set_option_call{"test_option_1", 1, 0, IPASIR2_E_OK});
+
     mock->expect_call(1, add_call{{1, 2}, IPASIR2_R_NONE, IPASIR2_E_OK});
     mock->expect_call(1, add_call{{-1}, IPASIR2_R_NONE, IPASIR2_E_OK});
 
@@ -84,9 +94,15 @@ TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
     mock->expect_call(1, solve_call{{}, 10, IPASIR2_E_OK});
     mock->expect_call(1, val_call{2, 2, IPASIR2_E_OK});
 
+    mock->expect_call(2, options_call{IPASIR2_E_OK});
+    mock->expect_call(2, set_option_call{"test_option_2", 1, 0, IPASIR2_E_OK});
     mock->expect_call(2, add_call{{-1}, IPASIR2_R_NONE, IPASIR2_E_OK});
     mock->expect_call(2, solve_call{{1}, 20, IPASIR2_E_OK});
     mock->expect_call(2, failed_call{1, 1, IPASIR2_E_OK});
+
+
+    solver1->set_option("test_option_1", 1);
+    solver2->set_option("test_option_2", 1);
 
     solver1->add(1, 2);
     solver1->add(-1);

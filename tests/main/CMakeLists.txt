@@ -1,7 +1,8 @@
 set(sources
-  ipasir2_mock_tests.cpp
   add_clause_tests.cpp
   detail_tests.cpp
+  ipasir2_mock_tests.cpp
+  options_tests.cpp
   query_lit_tests.cpp
   set_export_tests.cpp
   set_terminate_tests.cpp
