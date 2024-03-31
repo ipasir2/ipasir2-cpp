@@ -262,12 +262,23 @@ namespace detail {
   }
 
 
-  template <typename... Ts>
-  using enable_if_all_integral_t = std::enable_if_t<std::conjunction_v<std::is_integral<Ts>...>>;
+  // Currently, only int32_t literals are accepted. This currently prevents directly
+  // using other integer types for literals (for instance, int64_t), but ensures that
+  // either all methods can be used on the client's clauses, or none.
+  template <typename T>
+  using is_literal = std::is_same<std::decay_t<T>, int32_t>;
 
 
   template <typename T>
-  using enable_unless_integral_t = std::enable_if_t<!std::is_integral_v<T>>;
+  constexpr bool is_literal_v = is_literal<T>::value;
+
+
+  template <typename... Ts>
+  using enable_if_all_literals_t = std::enable_if_t<std::conjunction_v<is_literal<Ts>...>>;
+
+
+  template <typename T>
+  using enable_unless_literal_t = std::enable_if_t<!is_literal<T>::value>;
 
 
   using std::begin;
@@ -300,13 +311,12 @@ namespace detail {
   as_contiguous(Iter start, Iter stop, std::vector<int32_t>& buffer)
   {
     if constexpr (detail::is_contiguous_lit_iter<Iter>) {
-      static_assert(std::is_same_v<std::decay_t<decltype(*start)>, int32_t>);
+      static_assert(detail::is_literal_v<decltype(*start)>);
 
       return {&*start, std::distance(start, stop)};
     }
     else {
-      static_assert(
-          std::is_same_v<std::decay_t<typename std::iterator_traits<Iter>::value_type>, int32_t>);
+      static_assert(detail::is_literal_v<typename std::iterator_traits<Iter>::value_type>);
 
       buffer.assign(start, stop);
       return {buffer.data(), buffer.size()};
@@ -374,7 +384,7 @@ public:
   ///               - pointer type which is convertible to `int32_t const*`
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
-  template <typename Iter, typename = detail::enable_unless_integral_t<Iter>>
+  template <typename Iter, typename = detail::enable_unless_literal_t<Iter>>
   void add(Iter start, Iter stop, redundancy red = redundancy::none)
   {
     auto const& [clause_ptr, clause_len] = detail::as_contiguous(start, stop, m_clause_buf);
@@ -429,7 +439,7 @@ public:
   template <typename... Ts>
   void add(int32_t lit, Ts... rest)
   {
-    if constexpr (std::conjunction_v<std::is_integral<Ts>...>) {
+    if constexpr (std::conjunction_v<detail::is_literal<Ts>...>) {
       std::array literals_array{lit, rest...};
       add(literals_array.begin(), literals_array.end(), redundancy::none);
     }
@@ -451,7 +461,7 @@ public:
   ///          the satisfiability of the problem instance. Otherwise, nothing is returned.
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
-  template <typename Iter, typename = detail::enable_unless_integral_t<Iter>>
+  template <typename Iter, typename = detail::enable_unless_literal_t<Iter>>
   optional_bool solve(Iter assumptions_start, Iter assumptions_stop)
   {
     auto const& [assumptions_ptr, assumptions_len]
@@ -484,7 +494,7 @@ public:
   ///          the satisfiability of the problem instance. Otherwise, nothing is returned.
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
-  template <typename... Ints, typename = detail::enable_if_all_integral_t<Ints...>>
+  template <typename... Ints, typename = detail::enable_if_all_literals_t<Ints...>>
   optional_bool solve(int32_t assumption, Ints... assumptions_rest)
   {
     std::array assumptions{assumption, assumptions_rest...};
