@@ -274,16 +274,20 @@ namespace detail {
   }
 
 
+  /// \brief Metafunction that determines whether the given type is a literal type.
+  ///
+  /// \internal
+  ///
+  /// A literal type is either int32_t, or a type T for which `lit_traits<T>`
+  /// is specialized with conversion functions. With the latter, clients can
+  /// use custom literal types with the IPASIR-2 wrapper.
   template <typename T, typename = void>
   struct is_literal : public std::false_type {};
 
 
-  template <>
-  struct is_literal<int32_t> : public std::true_type {};
-
-
-  template <>
-  struct is_literal<int32_t const> : public std::true_type {};
+  template <typename T>
+  struct is_literal<T, std::enable_if_t<std::is_same_v<std::decay_t<T>, int32_t>>>
+    : public std::true_type {};
 
 
   template <typename T>
@@ -305,6 +309,8 @@ namespace detail {
   using enable_unless_literal_t = std::enable_if_t<!is_literal<T>::value>;
 
 
+  // std::begin and std::end are imported into the detail namespace to support ADL lookup of
+  // begin() and end() of custom clause types in enable_if_lit_container_t below.
   using std::begin;
   using std::end;
 
@@ -324,14 +330,24 @@ namespace detail {
       = std::contiguous_iterator<T>
         && std::is_same_v<std::decay_t<decltype(*std::declval<T>())>, int32_t>;
 #else
+  // In C++17, there is no programmatic way of checking whether an iterator is contiguous,
+  // so only a few common cases are covered:
+  // clang-format off
   template <typename T>
   constexpr bool is_contiguous_int32_iter
-      = std::is_same_v<std::decay_t<T>, int32_t*> || std::is_same_v<std::decay_t<T>, int32_t const*>
+      = std::is_same_v<std::decay_t<T>, int32_t*>
+        || std::is_same_v<std::decay_t<T>, int32_t const*>
         || std::is_same_v<std::decay_t<T>, std::vector<int32_t>::iterator>
         || std::is_same_v<std::decay_t<T>, std::vector<int32_t>::const_iterator>;
+  // clang-format on
 #endif
 
 
+  /// \brief Function for getting contiguous access to literals, buffering/converting literals as needed
+  ///
+  /// \internal
+  ///
+  /// \returns pointer to the array of int32_t literals, and the size of the array
   template <typename Iter>
   std::pair<int32_t const*, size_t>
   as_contiguous_int32s(Iter start, Iter stop, std::vector<int32_t>& buffer)
