@@ -318,10 +318,10 @@ namespace detail {
   // std::begin and std::end have specializations for them, but they can't be found
   // via ADL. However, using C-style arrays should be a niche use case, especially
   // since std::array can be used instead.
-  // TODO: only enable if the container actually contains literals
   template <typename T>
   using enable_if_lit_container_t
-      = std::void_t<decltype(begin(std::declval<T>())), decltype(end(std::declval<T>()))>;
+      = std::enable_if_t<std::conjunction_v<is_literal<decltype(*begin(std::declval<T>()))>,
+                                            is_literal<decltype(*end(std::declval<T>()))>>>;
 
 
 #if __cpp_lib_concepts
@@ -485,7 +485,7 @@ public:
   /// by a single `redundancy` argument.
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
-  template <typename T, typename... Ts, typename = detail::is_literal<T>>
+  template <typename T, typename... Ts, typename = std::enable_if_t<detail::is_literal_v<T>>>
   void add(T lit, Ts... rest)
   {
     if constexpr (std::conjunction_v<detail::is_literal<Ts>...>) {
