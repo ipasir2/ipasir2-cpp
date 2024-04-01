@@ -7,6 +7,7 @@ add_executable(examples-all
   02_trivial_portfolio.cpp
   03_find_backbones.cpp
   04_custom_types.cpp
+  05_model_counter.cpp
   example_utils.cpp
   main.cpp
 )
