@@ -108,7 +108,7 @@ TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
     solver1->add(-1);
     solver2->add(-1);
 
-    solver1->set_export_callback([](ip2::clause_view) {}, 0);
+    solver1->set_export_callback([](ip2::clause_view<int32_t>) {}, 0);
     solver1->set_terminate_callback([]() { return false; });
 
     CHECK_EQ(solver1->solve(), opt_bool{true});

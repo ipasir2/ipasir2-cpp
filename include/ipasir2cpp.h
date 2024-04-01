@@ -145,24 +145,36 @@ inline std::string to_string(optional_bool const& optbool)
 
 
 /// \brief Span-like clause view with implicit conversion to std::span, used for C++17 compatibility
+template <typename Lit = int32_t>
 class clause_view {
 public:
-  clause_view(int32_t const* start, int32_t const* stop) : m_start{start}, m_stop{stop} {}
-  int32_t const* begin() const noexcept { return m_start; }
-  int32_t const* end() const noexcept { return m_stop; }
+  clause_view(Lit const* start, Lit const* stop) : m_start{start}, m_stop{stop} {}
+  Lit const* begin() const noexcept { return m_start; }
+  Lit const* end() const noexcept { return m_stop; }
   bool empty() const noexcept { return m_start == m_stop; }
 
 #if __cpp_lib_span
-  operator std::span<int32_t const>() const noexcept
-  {
-    return std::span<int32_t const>(m_start, m_stop);
-  }
+  operator std::span<Lit const>() const noexcept { return std::span<Lit const>(m_start, m_stop); }
 #endif
 
 private:
-  int32_t const* m_start;
-  int32_t const* m_stop;
+  Lit const* m_start;
+  Lit const* m_stop;
 };
+
+
+/// \brief Type-trait struct for custom literal type converters
+///
+/// The IPASIR-2 wrapper can automatically convert client literal types `Lit` if
+/// this structure is specialized for `Lit` and the specialization has functions
+/// with the following signatures:
+///
+///    static int32_t to_ipasir2_lit(Lit const&);
+///    static Lit from_ipasir2_lit(int32_t literal);
+///
+/// See also example `04_custom_types.cpp`.
+template <typename Lit>
+struct lit_traits {};
 
 
 namespace detail {
@@ -275,7 +287,9 @@ namespace detail {
 
 
   template <typename T>
-  struct is_literal<T, std::void_t<decltype(to_ipasir2_lit(std::declval<T>()))>>
+  struct is_literal<
+      T,
+      std::void_t<decltype(lit_traits<std::decay_t<T>>::to_ipasir2_lit(std::declval<T>()))>>
     : public std::true_type {};
 
 
@@ -333,9 +347,10 @@ namespace detail {
     }
     else {
       // In this case the literal type is not int32_t. Conversion is needed, and hence also buffering:
+      using lit_type = std::decay_t<typename std::iterator_traits<Iter>::value_type>;
       buffer.clear();
       for (auto iter = start; iter != stop; ++iter) {
-        buffer.push_back(to_ipasir2_lit(*iter));
+        buffer.push_back(lit_traits<lit_type>::to_ipasir2_lit(*iter));
       }
       return {buffer.data(), buffer.size()};
     }
@@ -355,7 +370,7 @@ namespace detail {
   }
 
 
-  inline clause_view clause_view_from_zero_terminated(int32_t const* start)
+  inline clause_view<int32_t> clause_view_from_zero_terminated(int32_t const* start)
   {
     int32_t const* iter = start;
     while (*iter != 0) {
@@ -605,7 +620,7 @@ public:
   }
 
 
-  template <typename Func>
+  template <typename Lit = int32_t, typename Func>
   void set_export_callback(Func&& callback, size_t max_size = 0)
   {
     // Reset the callback function so the old callback is not called anymore in case the IPASIR call fails
@@ -620,7 +635,19 @@ public:
           });
     detail::throw_if_failed(result, "ipasir2_set_export");
 
-    m_export_callback = callback;
+    if constexpr (std::is_same_v<Lit, int32_t>) {
+      m_export_callback = callback;
+    }
+    else {
+      m_export_callback = [callback](clause_view<int32_t> native_clause) {
+        // TODO: reuse buffer?
+        std::vector<Lit> buf;
+        for (int32_t lit : native_clause) {
+          buf.push_back(lit_traits<std::decay_t<Lit>>::from_ipasir2_lit(lit));
+        }
+        callback(clause_view<Lit>(buf.data(), buf.data() + buf.size()));
+      };
+    }
   }
 
 
@@ -736,7 +763,7 @@ private:
   std::vector<int32_t> m_clause_buf;
 
   std::function<bool()> m_terminate_callback;
-  std::function<void(clause_view)> m_export_callback;
+  std::function<void(clause_view<int32_t>)> m_export_callback;
 
   mutable std::optional<std::vector<option>> m_cached_options;
 };

@@ -1,5 +1,6 @@
 #include <ipasir2cpp.h>
 
+#include "custom_types.h"
 #include "ipasir2_mock_doctest.h"
 
 #include <doctest.h>
@@ -29,7 +30,7 @@ TEST_CASE("solver::set_export_callback()")
 
     mock->expect_call(1, set_export_call{true, 1024, IPASIR2_E_OK});
     solver->set_export_callback(
-        [&](ip2::clause_view clause) {
+        [&](ip2::clause_view<int32_t> clause) {
           received_clauses[0].emplace_back(clause.begin(), clause.end());
         },
         1024);
@@ -39,7 +40,7 @@ TEST_CASE("solver::set_export_callback()")
 
     mock->expect_call(1, set_export_call{true, 512, IPASIR2_E_OK});
     solver->set_export_callback(
-        [&](ip2::clause_view clause) {
+        [&](ip2::clause_view<int32_t> clause) {
           received_clauses[1].emplace_back(clause.begin(), clause.end());
         },
         512);
@@ -52,7 +53,7 @@ TEST_CASE("solver::set_export_callback()")
 
 
     mock->expect_call(1, set_export_call{true, 0, IPASIR2_E_OK});
-    solver->set_export_callback([&](ip2::clause_view clause) {
+    solver->set_export_callback([&](ip2::clause_view<int32_t> clause) {
       received_clauses[2].emplace_back(clause.begin(), clause.end());
     });
     mock->simulate_export_callback_call(1, {3, 5, 0});
@@ -69,10 +70,11 @@ TEST_CASE("solver::set_export_callback()")
     bool called_old_callback = false;
 
     mock->expect_call(1, set_export_call{true, 1024, IPASIR2_E_OK});
-    solver->set_export_callback([&](ip2::clause_view) { called_old_callback = true; }, 1024);
+    solver->set_export_callback([&](ip2::clause_view<int32_t>) { called_old_callback = true; },
+                                1024);
 
     mock->expect_call(1, set_export_call{true, 1024, IPASIR2_E_UNKNOWN});
-    CHECK_THROWS_AS(solver->set_export_callback([&](ip2::clause_view) {}, 1024),
+    CHECK_THROWS_AS(solver->set_export_callback([&](ip2::clause_view<int32_t>) {}, 1024),
                     ip2::ipasir2_error const&);
 
     mock->simulate_export_callback_call(1, {1, 0});
@@ -89,7 +91,8 @@ TEST_CASE("solver::set_export_callback()")
     bool called_old_callback = false;
 
     mock->expect_call(1, set_export_call{true, 1024, IPASIR2_E_OK});
-    solver->set_export_callback([&](ip2::clause_view) { called_old_callback = true; }, 1024);
+    solver->set_export_callback([&](ip2::clause_view<int32_t>) { called_old_callback = true; },
+                                1024);
 
     mock->expect_call(1, set_export_call{false, 0, IPASIR2_E_UNKNOWN});
     CHECK_THROWS_AS(solver->clear_export_callback(), ip2::ipasir2_error const&);
@@ -119,6 +122,31 @@ TEST_CASE("solver::set_export_callback()")
     CHECK_EQ(received_clause, std::vector<int32_t>{1, 2, 3});
   }
 #endif
+
+
+  SUBCASE("Use export callback with custom literal type")
+  {
+    mock->expect_init_call(1);
+    auto solver = api.create_solver();
+
+    using custom_lit_test::lit;
+
+    std::vector<lit> received_clause;
+
+    mock->expect_call(1, set_export_call{true, 1024, IPASIR2_E_OK});
+    solver->set_export_callback<lit>(
+        [&](ip2::clause_view<lit> clause) { received_clause.assign(clause.begin(), clause.end()); },
+        1024);
+
+    mock->simulate_export_callback_call(1, {1, 2, 3, 0});
+    CHECK_EQ(received_clause, std::vector<lit>{lit{1, true}, lit{2, true}, lit{3, true}});
+
+    mock->simulate_export_callback_call(1, {0});
+    CHECK(received_clause.empty());
+
+    mock->simulate_export_callback_call(1, {2, 3, 0});
+    CHECK_EQ(received_clause, std::vector<lit>{lit{2, true}, lit{3, true}});
+  }
 
 
   CHECK(!mock->has_outstanding_expects());

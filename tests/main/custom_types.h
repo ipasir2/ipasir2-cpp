@@ -49,19 +49,28 @@ public:
 
   int var() const { return m_value >> 1; }
 
+  bool operator==(lit const& rhs) const { return m_value == rhs.m_value; }
+
+  bool operator!=(lit const& rhs) const { return !(*this == rhs); }
+
 private:
   int m_value = 0;
 };
-
-
-inline int32_t to_ipasir2_lit(lit const& literal)
-{
-  return literal.var() * (literal.sign() ? 1 : -1);
 }
 
 
-inline lit from_ipasir2_lit(int32_t literal)
-{
-  return lit(std::abs(literal), literal > 0);
-}
+namespace ipasir2 {
+template <>
+struct lit_traits<custom_lit_test::lit> {
+  static int32_t to_ipasir2_lit(custom_lit_test::lit const& literal)
+  {
+    return literal.var() * (literal.sign() ? 1 : -1);
+  }
+
+
+  static custom_lit_test::lit from_ipasir2_lit(int32_t literal)
+  {
+    return custom_lit_test::lit(std::abs(literal), literal > 0);
+  }
+};
 }
