@@ -9,8 +9,7 @@ option(WITH_DOXYGEN "Add a target `doxygen` building Doxygen files for ipasir2cp
 
 include(buildutils/doxygen.cmake)
 
-# ipasir2cpp.h can be used with C++17, but has extra features when
-# used with C++20
+# ipasir2cpp.h can be used with C++17, but has extra features when used with C++20
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -21,8 +20,10 @@ add_library(ipasir2cpp INTERFACE)
 target_include_directories(ipasir2cpp INTERFACE include)
 target_link_libraries(ipasir2cpp INTERFACE ipasir2)
 
+
+# In this project, ctest executes all testsuites as well as the example code
+enable_testing()
+
 add_subdirectory(testdeps)
 add_subdirectory(tests)
-
 add_subdirectory(examples)
-

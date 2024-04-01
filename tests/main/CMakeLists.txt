@@ -11,6 +11,6 @@ set(sources
   tests.cpp
 )
 
-add_test_executables(main-tests ${sources})
-target_link_libraries(main-tests-cpp17 PRIVATE ipasir2mock)
-target_link_libraries(main-tests-cpp20 PRIVATE ipasir2mock)
+add_test_executables(main-testsuite ${sources})
+target_link_libraries(main-testsuite-cpp17 PRIVATE ipasir2mock)
+target_link_libraries(main-testsuite-cpp20 PRIVATE ipasir2mock)

@@ -1,3 +1,3 @@
 if (NOT WIN32)
-  add_test_executables(dlsym-tests dlsym_tests.cpp)
+  add_test_executables(dlsym-testsuite dlsym_tests.cpp)
 endif()

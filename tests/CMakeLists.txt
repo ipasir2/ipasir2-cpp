@@ -11,6 +11,8 @@ function(add_test_executables BASENAME)
     target_link_libraries(${name} PRIVATE ipasir2cpp doctest)
     target_include_directories(${name} PRIVATE ${test_base_dir})
     set_target_properties(${name} PROPERTIES CXX_STANDARD ${cxx_standard})
+
+    add_test(NAME ${name} COMMAND ${name} WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   endforeach()
 endfunction()
 
