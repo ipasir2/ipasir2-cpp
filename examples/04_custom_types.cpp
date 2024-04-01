@@ -21,10 +21,10 @@ private:
 
 
 namespace third_party_lib {
-// This clause type does not have begin() and end(). Suppose you don't
-// own this type. It can still be passed to solver::add() if you define
-// suitable begin() and end() functions in the same namespace as the
-// third-party clause type - they can return iterators, or pointers.
+// The following clause type does not have begin() and end(). Suppose it is defined
+// in a third-party library and can't be changed. It can still be passed to
+// solver::add() if you define suitable begin() and end() functions in the same
+// namespace as the third-party clause type .
 class clause {
 public:
   clause(std::vector<int32_t> const& lits) : m_literals{lits} {}
@@ -33,10 +33,11 @@ public:
 
 private:
   std::vector<int32_t> m_literals;
-  int m_additional_attrs = 0;
+  int m_additional_attrs = 0; // placeholder for actual data
 };
 
 
+// The freestanding begin() and end() functions are used via ADL.
 auto begin(clause const& clause)
 {
   // begin() and end() need to return iterators, or pointers to a
@@ -48,6 +49,42 @@ auto begin(clause const& clause)
 auto end(clause const& clause)
 {
   return clause.literals().end();
+}
+}
+
+
+namespace custom_lit {
+// The following literal type is similar to the one used in Minisat.
+// To use these literals with the IPASIR-2 wrapper, you need to define
+// conversion functions from and to DIMACS-style representation. Specifically,
+// for a custom literal type `lit` you need to define the functions
+// `int32_t to_ipasir2_lit()` and `lit from_ipasir2_lit(int32_t literal)`
+// in the namespace of the literal type:
+class lit {
+public:
+  lit(uint32_t var, bool sign) : m_value{2 * var + static_cast<int32_t>(sign)} {}
+
+  bool sign() const { return m_value & 1; }
+  int var() const { return m_value >> 1; }
+  size_t index() const { return m_value; }
+
+  // etc.
+
+private:
+  uint32_t m_value = 0;
+};
+
+
+// `to_ipasir2_lit` and `from_ipasir2_lit` are used via ADL.
+int32_t to_ipasir2_lit(lit const& literal)
+{
+  return literal.var() * (literal.sign() ? 1 : -1);
+}
+
+
+lit from_ipasir2_lit(int32_t literal)
+{
+  return lit(std::abs(literal), literal > 0);
 }
 }
 
@@ -67,6 +104,12 @@ void example_04_custom_types()
     // clause type is not part of the ip2::solver type.
     solver->add(clause1);
     solver->add(clause2);
+
+
+    // Custom literal types can also be used with the ipasir2 wrapper:
+    using custom_lit::lit;
+    std::vector<lit> clause3{lit{1, true}, lit{2, false}};
+    solver->add(clause3);
 
     // etc.
   }

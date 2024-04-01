@@ -51,6 +51,26 @@ TEST_CASE("solver::add() functions")
   }
 
 
+  SUBCASE("Successfully add clauses via parameter-pack function with custom literal type")
+  {
+    mock->expect_init_call(1);
+    mock->expect_call(1, add_call{{1}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, -2}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, -2, 3}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, -2, 3, -4}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, -2, 3}, IPASIR2_R_FORGETTABLE, IPASIR2_E_OK});
+
+    using custom_lit_test::lit;
+
+    auto solver = api.create_solver();
+    solver->add(lit{1, true});
+    solver->add(lit{1, true}, lit{2, false});
+    solver->add(lit{1, true}, lit{2, false}, lit{3, true});
+    solver->add(lit{1, true}, lit{2, false}, lit{3, true}, lit{4, false});
+    solver->add(lit{1, true}, lit{2, false}, lit{3, true}, redundancy::forgettable);
+  }
+
+
   SUBCASE("Successfully add 3-element clause default redundancy with container-based add")
   {
     mock->expect_init_call(1);
@@ -133,7 +153,7 @@ TEST_CASE("solver::add() functions")
   }
 
 
-  SUBCASE("Successfully add clauses with custom types")
+  SUBCASE("Successfully add clauses with custom clause type")
   {
     mock->expect_init_call(1);
 
@@ -154,6 +174,38 @@ TEST_CASE("solver::add() functions")
     solver->add(clause4);
   }
 
+
+  SUBCASE("Successfully add clauses with custom literal type")
+  {
+    mock->expect_init_call(1);
+
+    mock->expect_call(1, add_call{{1, -2}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, 3}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, -4}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, 5}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, -2}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, 3}, IPASIR2_R_NONE, IPASIR2_E_OK});
+    mock->expect_call(1, add_call{{1, -2}, IPASIR2_R_FORGETTABLE, IPASIR2_E_OK});
+
+    using custom_lit = custom_lit_test::lit;
+
+    // With contiguous iterator:
+    std::vector<custom_lit> clause1{{1, true}, {2, false}};
+    std::vector<custom_lit> const clause2{{1, true}, {3, true}};
+
+    // With non-contiguous iterator:
+    std::list<custom_lit> clause3{{1, true}, {4, false}};
+    std::list<custom_lit> const clause4{{1, true}, {5, true}};
+
+    auto solver = api.create_solver();
+    solver->add(clause1);
+    solver->add(clause2);
+    solver->add(clause3);
+    solver->add(clause4);
+    solver->add(clause1.data(), clause1.data() + clause1.size());
+    solver->add(clause2.data(), clause2.data() + clause2.size());
+    solver->add(clause1, redundancy::forgettable);
+  }
 
   CHECK(!mock->has_outstanding_expects());
 }

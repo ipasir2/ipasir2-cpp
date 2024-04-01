@@ -38,3 +38,30 @@ inline auto end(custom_lit_container_2 const& clause)
   return clause.literals().end();
 }
 }
+
+
+namespace custom_lit_test {
+class lit {
+public:
+  lit(int var, bool sign) : m_value{2 * var + static_cast<int>(sign)} {}
+
+  bool sign() const { return m_value & 1; }
+
+  int var() const { return m_value >> 1; }
+
+private:
+  int m_value = 0;
+};
+
+
+inline int32_t to_ipasir2_lit(lit const& literal)
+{
+  return literal.var() * (literal.sign() ? 1 : -1);
+}
+
+
+inline lit from_ipasir2_lit(int32_t literal)
+{
+  return lit(std::abs(literal), literal > 0);
+}
+}

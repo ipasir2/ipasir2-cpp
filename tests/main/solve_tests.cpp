@@ -109,6 +109,23 @@ TEST_CASE("solver::solve() functions")
   }
 
 
+  SUBCASE("Successfully solve with custom assumption literal type")
+  {
+    mock->expect_init_call(1);
+
+    mock->expect_call(1, solve_call{{1}, 10, IPASIR2_E_OK});
+    mock->expect_call(1, solve_call{{1, 2}, 10, IPASIR2_E_OK});
+    mock->expect_call(1, solve_call{{1, 2, 3}, 10, IPASIR2_E_OK});
+
+    using custom_lit_test::lit;
+
+    auto solver = api.create_solver();
+    CHECK_EQ(solver->solve(lit{1, true}), optional_bool{true});
+    CHECK_EQ(solver->solve(lit{1, true}, lit{2, true}), optional_bool{true});
+    CHECK_EQ(solver->solve(lit{1, true}, lit{2, true}, lit{3, true}), optional_bool{true});
+  }
+
+
   SUBCASE("Successfully solve with contiguous assumption iterators")
   {
     mock->expect_init_call(1);
