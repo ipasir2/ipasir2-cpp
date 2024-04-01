@@ -104,9 +104,9 @@ Features:
 
  - [x] Support for `dlopen()`
  - [x] Support for custom clause types
- - [ ] Support for custom literal types
+ - [x] Support for custom literal types
  - [x] Support for functionality also covered by IPASIR-1
- - [ ] Options API
+ - [x] Options API
  - [ ] Support for importing clauses
  - [ ] Support for observing the current partial assignment
  - [ ] Namespace versioning
