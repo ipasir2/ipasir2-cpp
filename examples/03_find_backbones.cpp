@@ -3,6 +3,7 @@
 #include "example_utils.h"
 
 #include <chrono>
+#include <stdexcept>
 #include <vector>
 
 
@@ -36,11 +37,18 @@ void example_03_find_backbones()
     dimacs_parser parser{path_of_cnf(cnf_file)};
     parser.for_each_clause([&](std::span<int32_t const> clause) { solver->add(clause); });
 
-    solver->set_terminate_callback([&, s = stopwatch{}] { return s.time_since_start() >= 20s; });
+    solver->set_terminate_callback([watch = stopwatch{}]() -> bool {
+      if (watch.time_since_start() >= 20s) {
+        // Since no other limits are set, this causes solve() to either return sat or unsat,
+        // or to rethrow this exception. An alternative would be to return `true` and to check
+        // if the solve result is unknown.
+        throw std::runtime_error{"Timeout"};
+      }
+      return false;
+    });
 
-    if (ip2::optional_bool initial_result = solver->solve(); initial_result != ip2::optional_bool{true}) {
-      print("{}", !initial_result.has_value() ? "   Timeout" : "  The formula is not satisfiable, aborting");
-      return;
+    if (solver->solve() != ip2::optional_bool{true}) {
+      print("  The formula is not satisfiable, aborting");
     }
 
     // backbone_candidates contains backbone literal candidates. When a candidate literal is
@@ -55,10 +63,6 @@ void example_03_find_backbones()
       }
 
       ip2::optional_bool const counterexample_search_result = solver->solve(-*candidate);
-      if (!counterexample_search_result.has_value()) {
-        print("  Timeout after finding {} backbone literals", *candidate, backbones.size());
-        return;
-      }
 
       if (counterexample_search_result == ip2::optional_bool{true}) {
         // The found model might eliminate further backbone candidates that have not been
@@ -86,5 +90,8 @@ void example_03_find_backbones()
   }
   catch (ip2::ipasir2_error const& error) {
     print("  Failed solving {}: {}", cnf_file, error.what());
+  }
+  catch (std::runtime_error const& error) {
+    print("  {}", error.what());
   }
 }

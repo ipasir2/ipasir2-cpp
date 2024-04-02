@@ -108,7 +108,15 @@ public:
     }
 
     auto const& [callback, cookie] = callback_iter->second;
-    int actual_cb_result = callback(cookie);
+
+    int actual_cb_result = 0;
+    try {
+      actual_cb_result = callback(cookie);
+    }
+    catch(...) {
+      fail_test("An exception was thrown from the terminate callback into the solver");
+      return;
+    }
 
     if (expected_cb_result != actual_cb_result) {
       throw ipasir2_mock_error{"Terminate callback returned unexpected result"};
@@ -125,7 +133,13 @@ public:
     }
 
     auto const& [callback, cookie] = callback_iter->second;
-    callback(cookie, clause.data());
+
+    try {
+      callback(cookie, clause.data());
+    }
+    catch(...) {
+      fail_test("An exception was thrown from export callback back into the solver");
+    }
   }
 
 

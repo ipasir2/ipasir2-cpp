@@ -516,8 +516,12 @@ public:
     auto const& [assumptions_ptr, assumptions_len]
         = detail::as_contiguous_int32s(assumptions_start, assumptions_stop, m_clause_buf);
     int result = 0;
-    detail::throw_if_failed(m_api.solve(m_handle.get(), &result, assumptions_ptr, assumptions_len),
-                            "ipasir2_solve");
+
+    ipasir2_errorcode const solve_status
+        = m_api.solve(m_handle.get(), &result, assumptions_ptr, assumptions_len);
+    rethrow_exception_thrown_in_callback();
+
+    detail::throw_if_failed(solve_status, "ipasir2_solve");
     return detail::to_solve_result(result);
   }
 
@@ -562,7 +566,11 @@ public:
   optional_bool solve()
   {
     int32_t result = 0;
-    detail::throw_if_failed(m_api.solve(m_handle.get(), &result, nullptr, 0), "ipasir2_solve");
+    ipasir2_errorcode const solve_status = m_api.solve(m_handle.get(), &result, nullptr, 0);
+
+    rethrow_exception_thrown_in_callback();
+    detail::throw_if_failed(solve_status, "ipasir2_solve");
+
     return detail::to_solve_result(result);
   }
 
@@ -613,12 +621,25 @@ public:
     if (!m_terminate_callback) {
       auto result = m_api.set_terminate(m_handle.get(), this, [](void* data) -> int {
         solver* s = reinterpret_cast<solver*>(data);
-        if (s->m_terminate_callback) {
-          return s->m_terminate_callback();
+
+        if (s->m_exception_thrown_in_callback) {
+          // An exception has previously been thrown from a callback, so abort as fast as possible
+          return true;
         }
-        else {
-          // Clearing the callback has failed ~> behave as if user hadn't set a callback
-          return false;
+
+        try {
+          if (s->m_terminate_callback) {
+            return s->m_terminate_callback();
+          }
+          else {
+            // Clearing the callback has failed ~> behave as if user hadn't set a callback
+            return false;
+          }
+        }
+        catch (...) {
+          // Can't throw through the C API ~> exception is rethrown from solve()
+          s->m_exception_thrown_in_callback = std::current_exception();
+          return true;
         }
       });
       detail::throw_if_failed(result, "ipasir2_set_terminate");
@@ -645,8 +666,19 @@ public:
     auto result
         = m_api.set_export(m_handle.get(), this, max_size, [](void* data, int32_t const* clause) {
             solver* s = reinterpret_cast<solver*>(data);
-            if (s->m_export_callback) {
-              return s->m_export_callback(detail::clause_view_from_zero_terminated(clause));
+            if (s->m_exception_thrown_in_callback) {
+              // An exception has previously been thrown from a callback, so abort as fast as possible
+              return;
+            }
+
+            try {
+              if (s->m_export_callback) {
+                return s->m_export_callback(detail::clause_view_from_zero_terminated(clause));
+              }
+            }
+            catch (...) {
+              // Can't throw through the C API ~> exception is rethrown from solve()
+              s->m_exception_thrown_in_callback = std::current_exception();
             }
           });
     detail::throw_if_failed(result, "ipasir2_set_export");
@@ -772,6 +804,17 @@ private:
     }
   }
 
+
+  void rethrow_exception_thrown_in_callback()
+  {
+    if (m_exception_thrown_in_callback) {
+      std::exception_ptr to_throw = m_exception_thrown_in_callback;
+      m_exception_thrown_in_callback = nullptr;
+      std::rethrow_exception(to_throw);
+    }
+  }
+
+
   detail::shared_c_api m_api;
 
   using unique_ipasir2_handle = std::unique_ptr<void, decltype(&ipasir2_release)>;
@@ -780,6 +823,12 @@ private:
 
   std::function<bool()> m_terminate_callback;
   std::function<void(clause_view<int32_t>)> m_export_callback;
+
+  // If an exception is thrown in a client-supplied callback function, it is stored
+  // and rethrown from solve(). This is required since we can't throw C++ exceptions
+  // across the IPASIR-2 API. An alternative would be to require callback functions
+  // to be noexcept, but that would make using the callbacks needlessly errorprone.
+  std::exception_ptr m_exception_thrown_in_callback;
 
   mutable std::optional<std::vector<option>> m_cached_options;
 };

@@ -149,5 +149,42 @@ TEST_CASE("solver::set_export_callback()")
   }
 
 
+  SUBCASE("When an exception is thrown in the callback, it is rethrown once from solve()")
+  {
+    mock->expect_init_call(1);
+    auto solver = api.create_solver();
+
+    mock->expect_call(1, set_export_call{true, 0, IPASIR2_E_OK});
+    solver->set_export_callback([&](auto const&) { throw std::runtime_error{"test exception"}; });
+
+    // Caveat: this test relies on an implementation detail: callbacks are called during solve(),
+    // but here the callback is simulated before the actual solve() call. This keeps some
+    // complexity out of the mocking system. If the solver would check for exceptions before
+    // invoking ipasir2_solve(), the test would fail though, since that call would not be observed.
+
+    mock->simulate_export_callback_call(1, {1, 2, 3, 0});
+
+    SUBCASE("Check solve() overload without assumptions")
+    {
+      mock->expect_call(1, solve_call{{}, 10, IPASIR2_E_OK});
+      CHECK_THROWS_WITH_AS(solver->solve(), "test exception", std::runtime_error const&);
+
+      mock->expect_call(1, solve_call{{}, 10, IPASIR2_E_OK});
+      CHECK_EQ(solver->solve(), ip2::optional_bool{true});
+    }
+
+    SUBCASE("Check solve() overload with assumptions")
+    {
+      std::vector<int32_t> assumptions = {1, 2};
+
+      mock->expect_call(1, solve_call{assumptions, 10, IPASIR2_E_OK});
+      CHECK_THROWS_WITH_AS(solver->solve(assumptions), "test exception", std::runtime_error const&);
+
+      mock->expect_call(1, solve_call{assumptions, 10, IPASIR2_E_OK});
+      CHECK_EQ(solver->solve(assumptions), ip2::optional_bool{true});
+    }
+  }
+
+
   CHECK(!mock->has_outstanding_expects());
 }
