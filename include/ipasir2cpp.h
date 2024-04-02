@@ -94,19 +94,19 @@ private:
 /// unchecked access to the value.
 class optional_bool {
 public:
-  explicit optional_bool(bool value) : m_value{value} {}
+  constexpr explicit optional_bool(bool value) : m_value{value} {}
 
   /// \brief Constructs an empty optional_bool
-  optional_bool() {}
+  constexpr optional_bool() {}
 
 
   /// \brief Returns the contained value.
   ///
   /// \throws std::bad_optional_access if the object has no value.
-  bool unwrap() const { return m_value.value(); }
+  constexpr bool unwrap() const { return m_value.value(); }
 
   template <typename T>
-  T const& map(T const& if_true, T const& if_false, T const& if_empty) const
+  constexpr T const& map(T const& if_true, T const& if_false, T const& if_empty) const
   {
     if (m_value.has_value()) {
       return *m_value ? if_true : if_false;
@@ -114,16 +114,16 @@ public:
     return if_empty;
   }
 
-  bool has_value() const { return m_value.has_value(); }
+  constexpr bool has_value() const { return m_value.has_value(); }
 
-  std::optional<bool> as_std_optional() const { return m_value; }
+  constexpr std::optional<bool> as_std_optional() const { return m_value; }
 
-  auto operator==(optional_bool const& rhs) const noexcept
+  constexpr auto operator==(optional_bool const& rhs) const noexcept
   {
     return this == (&rhs) || m_value == rhs.m_value;
   }
 
-  auto operator!=(optional_bool const& rhs) const noexcept { return !(*this == rhs); }
+  constexpr auto operator!=(optional_bool const& rhs) const noexcept { return !(*this == rhs); }
 
   // Rationale: This is used for instance to make solver::solve() calls less
   // errorprone. If that function would return an
