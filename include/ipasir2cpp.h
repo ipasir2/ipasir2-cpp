@@ -695,14 +695,14 @@ public:
       m_export_callback = callback;
     }
     else {
-      m_export_callback = [callback](clause_view<int32_t> native_clause) {
-        // TODO: reuse buffer?
-        std::vector<Lit> buf;
-        for (int32_t lit : native_clause) {
-          buf.push_back(lit_traits<std::decay_t<Lit>>::from_ipasir2_lit(lit));
-        }
-        callback(clause_view<Lit>(buf.data(), buf.data() + buf.size()));
-      };
+      m_export_callback
+          = [callback, buf = std::vector<Lit>{}](clause_view<int32_t> native_clause) mutable {
+              buf.clear();
+              for (int32_t lit : native_clause) {
+                buf.push_back(lit_traits<std::decay_t<Lit>>::from_ipasir2_lit(lit));
+              }
+              callback(clause_view<Lit>(buf.data(), buf.data() + buf.size()));
+            };
     }
   }
 
