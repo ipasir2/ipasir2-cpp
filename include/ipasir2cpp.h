@@ -149,6 +149,12 @@ template <typename Lit = int32_t>
 class clause_view {
 public:
   clause_view(Lit const* start, Lit const* stop) : m_start{start}, m_stop{stop} {}
+
+  explicit clause_view(std::vector<Lit> const& clause)
+    : m_start{clause.data()}, m_stop{clause.data() + clause.size()}
+  {
+  }
+
   Lit const* begin() const noexcept { return m_start; }
   Lit const* end() const noexcept { return m_stop; }
   bool empty() const noexcept { return m_start == m_stop; }
@@ -180,8 +186,6 @@ struct lit_traits {};
 template <>
 struct lit_traits<int32_t> {
   static int32_t to_ipasir2_lit(int32_t literal) { return literal; }
-
-
   static int32_t from_ipasir2_lit(int32_t literal) { return literal; }
 };
 
@@ -442,7 +446,7 @@ public:
   {
     auto const& [clause_ptr, clause_len] = detail::as_contiguous_int32s(start, stop, m_clause_buf);
     ipasir2_redundancy c_redundancy = static_cast<ipasir2_redundancy>(red);
-    detail::throw_if_failed(m_api.add(m_handle.get(), clause_ptr, clause_len, c_redundancy),
+    detail::throw_if_failed(m_api.add(m_solver.get(), clause_ptr, clause_len, c_redundancy),
                             "ipasir2_add");
   }
 
@@ -522,7 +526,7 @@ public:
     int result = 0;
 
     ipasir2_errorcode const solve_status
-        = m_api.solve(m_handle.get(), &result, assumptions_ptr, assumptions_len);
+        = m_api.solve(m_solver.get(), &result, assumptions_ptr, assumptions_len);
     rethrow_exception_thrown_in_callback();
 
     detail::throw_if_failed(solve_status, "ipasir2_solve");
@@ -570,7 +574,7 @@ public:
   optional_bool solve()
   {
     int32_t result = 0;
-    ipasir2_errorcode const solve_status = m_api.solve(m_handle.get(), &result, nullptr, 0);
+    ipasir2_errorcode const solve_status = m_api.solve(m_solver.get(), &result, nullptr, 0);
 
     rethrow_exception_thrown_in_callback();
     detail::throw_if_failed(solve_status, "ipasir2_solve");
@@ -587,7 +591,7 @@ public:
   {
     int32_t const ipasir2_lit = lit_traits<Lit>::to_ipasir2_lit(lit);
     int32_t result = 0;
-    detail::throw_if_failed(m_api.val(m_handle.get(), ipasir2_lit, &result), "ipasir2_val");
+    detail::throw_if_failed(m_api.val(m_solver.get(), ipasir2_lit, &result), "ipasir2_val");
 
     if (result == ipasir2_lit) {
       return optional_bool{true};
@@ -613,7 +617,7 @@ public:
   {
     int32_t const ipasir2_lit = lit_traits<Lit>::to_ipasir2_lit(lit);
     int32_t result = 0;
-    detail::throw_if_failed(m_api.failed(m_handle.get(), ipasir2_lit, &result), "ipasir2_failed");
+    detail::throw_if_failed(m_api.failed(m_solver.get(), ipasir2_lit, &result), "ipasir2_failed");
 
     if (result != 0 && result != 1) {
       throw ipasir2_error{"Unknown truth value received from solver"};
@@ -627,11 +631,12 @@ public:
   void set_terminate_callback(Func&& callback)
   {
     if (!m_terminate_callback) {
-      auto result = m_api.set_terminate(m_handle.get(), this, [](void* data) -> int {
+      auto result = m_api.set_terminate(m_solver.get(), this, [](void* data) -> int {
         solver* s = reinterpret_cast<solver*>(data);
 
         if (s->m_exception_thrown_in_callback) {
-          // An exception has previously been thrown from a callback, so abort as fast as possible
+          // The client-provided callback might throw another exception, so don't call it.
+          // Since the exception is rethrown from solve(), solving is aborted:
           return true;
         }
 
@@ -660,7 +665,7 @@ public:
   void clear_terminate_callback()
   {
     m_terminate_callback = {};
-    detail::throw_if_failed(m_api.set_terminate(m_handle.get(), nullptr, nullptr),
+    detail::throw_if_failed(m_api.set_terminate(m_solver.get(), nullptr, nullptr),
                             "ipasir2_set_terminate");
   }
 
@@ -672,10 +677,10 @@ public:
     m_export_callback = {};
 
     auto result
-        = m_api.set_export(m_handle.get(), this, max_size, [](void* data, int32_t const* clause) {
+        = m_api.set_export(m_solver.get(), this, max_size, [](void* data, int32_t const* clause) {
             solver* s = reinterpret_cast<solver*>(data);
             if (s->m_exception_thrown_in_callback) {
-              // An exception has previously been thrown from a callback, so abort as fast as possible
+              // The client-provided callback might throw another exception, so don't call it.
               return;
             }
 
@@ -691,7 +696,7 @@ public:
           });
     detail::throw_if_failed(result, "ipasir2_set_export");
 
-    if constexpr (std::is_same_v<Lit, int32_t>) {
+    if constexpr (std::is_same_v<std::decay_t<Lit>, int32_t>) {
       m_export_callback = callback;
     }
     else {
@@ -701,7 +706,7 @@ public:
               for (int32_t lit : native_clause) {
                 buf.push_back(lit_traits<std::decay_t<Lit>>::from_ipasir2_lit(lit));
               }
-              callback(clause_view<Lit>(buf.data(), buf.data() + buf.size()));
+              callback(clause_view<Lit>{buf});
             };
     }
   }
@@ -710,7 +715,7 @@ public:
   void clear_export_callback()
   {
     m_export_callback = {};
-    detail::throw_if_failed(m_api.set_export(m_handle.get(), nullptr, 0, nullptr),
+    detail::throw_if_failed(m_api.set_export(m_solver.get(), nullptr, 0, nullptr),
                             "ipasir2_set_export");
   }
 
@@ -752,7 +757,7 @@ public:
 
   void set_option(option const& option, int64_t value, int64_t index = 0)
   {
-    detail::throw_if_failed(m_api.set_option(m_handle.get(), option.m_solver_handle, value, index),
+    detail::throw_if_failed(m_api.set_option(m_solver.get(), option.m_solver_handle, value, index),
                             "ipasir2_set_option");
   }
 
@@ -767,7 +772,7 @@ public:
   ///
   /// The handle is valid for the lifetime of the `solver` object.
   /// This function can be used to access non-standard extensions of the IPASIR-2 API.
-  void* get_ipasir2_handle() { return m_handle.get(); }
+  void* get_ipasir2_handle() { return m_solver.get(); }
 
 
   // `solver` objects manage IPASIR2 resources. Also, pointers to `solver` objects
@@ -789,11 +794,11 @@ private:
   }
 
 
-  explicit solver(detail::shared_c_api const& api) : m_api{api}, m_handle{nullptr, nullptr}
+  explicit solver(detail::shared_c_api const& api) : m_api{api}, m_solver{nullptr, nullptr}
   {
     void* handle = nullptr;
     detail::throw_if_failed(m_api.init(&handle), "ipasir2_init");
-    m_handle = unique_ipasir2_handle{handle, m_api.release};
+    m_solver = unique_ipasir2_solver{handle, m_api.release};
   }
 
 
@@ -801,7 +806,7 @@ private:
   {
     if (!m_cached_options.has_value()) {
       ipasir2_option const* option_cursor = nullptr;
-      detail::throw_if_failed(m_api.options(m_handle.get(), &option_cursor), "ipasir2_options");
+      detail::throw_if_failed(m_api.options(m_solver.get(), &option_cursor), "ipasir2_options");
 
       m_cached_options = std::vector<option>{};
 
@@ -825,8 +830,9 @@ private:
 
   detail::shared_c_api m_api;
 
-  using unique_ipasir2_handle = std::unique_ptr<void, decltype(&ipasir2_release)>;
-  unique_ipasir2_handle m_handle;
+  using unique_ipasir2_solver = std::unique_ptr<void, decltype(&ipasir2_release)>;
+  unique_ipasir2_solver m_solver;
+
   std::vector<int32_t> m_clause_buf;
 
   std::function<bool()> m_terminate_callback;
