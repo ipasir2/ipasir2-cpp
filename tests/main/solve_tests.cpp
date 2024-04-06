@@ -22,7 +22,7 @@ using ip2::optional_bool;
 TEST_CASE("solver::solve() functions")
 {
   auto mock = create_ipasir2_doctest_mock();
-  ip2::ipasir2 api = ip2::ipasir2::create();
+  ip2::ipasir2 api = ip2::create_api();
   std::vector<int32_t> assumptions = {1, -2, 3};
 
 

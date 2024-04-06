@@ -10,8 +10,8 @@ void example_01_readme()
   PRINT_FILENAME();
 
   try {
-    ip2::ipasir2 api = ip2::ipasir2::create();
-    // For dynamic loading: ip2::ipasir2 api = ip2::ipasir2::create("./solver.so");
+    ip2::ipasir2 api = ip2::create_api();
+    // For dynamic loading: ip2::ipasir2 api = ip2::create_api("./solver.so");
 
     std::unique_ptr<ip2::solver> solver = api.create_solver();
     solver->add(1, 2, 3);

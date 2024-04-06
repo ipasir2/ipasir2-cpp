@@ -19,7 +19,7 @@ using clause_vec = std::vector<std::vector<int32_t>>;
 TEST_CASE("solver::set_export_callback()")
 {
   auto mock = create_ipasir2_doctest_mock();
-  ip2::ipasir2 api = ip2::ipasir2::create();
+  ip2::ipasir2 api = ip2::create_api();
 
   SUBCASE("Successfully set and clear export callback")
   {

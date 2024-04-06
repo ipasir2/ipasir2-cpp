@@ -18,7 +18,7 @@ using clause_vec = std::vector<std::vector<int32_t>>;
 TEST_CASE("solver::get_option() and solver::set_option()")
 {
   auto mock = create_ipasir2_doctest_mock();
-  ip2::ipasir2 api = ip2::ipasir2::create();
+  ip2::ipasir2 api = ip2::create_api();
 
   std::vector<ipasir2_option> test_options
       = {ipasir2_option{"test_option_1", -1000, 1000, IPASIR2_S_CONFIG, 1, 0, nullptr},

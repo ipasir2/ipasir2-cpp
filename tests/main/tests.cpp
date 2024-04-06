@@ -9,7 +9,7 @@ namespace ip2 = ipasir2;
 TEST_CASE("Query signature")
 {
   auto mock = create_ipasir2_doctest_mock();
-  ip2::ipasir2 api = ip2::ipasir2::create();
+  ip2::ipasir2 api = ip2::create_api();
 
 
   SUBCASE("Successfully query signature")
@@ -32,7 +32,7 @@ TEST_CASE("Query signature")
 TEST_CASE("Instantiate solver")
 {
   auto mock = create_ipasir2_doctest_mock();
-  ip2::ipasir2 api = ip2::ipasir2::create();
+  ip2::ipasir2 api = ip2::create_api();
 
 
   SUBCASE("Successfully instantiate solver")
@@ -55,7 +55,7 @@ TEST_CASE("Instantiate solver")
 TEST_CASE("Get IPASIR-2 handle")
 {
   auto mock = create_ipasir2_doctest_mock();
-  ip2::ipasir2 api = ip2::ipasir2::create();
+  ip2::ipasir2 api = ip2::create_api();
 
   {
     mock->expect_init_call(1);

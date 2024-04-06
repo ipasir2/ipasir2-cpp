@@ -9,7 +9,7 @@ namespace ip2 = ipasir2;
 TEST_CASE("solver::set_terminate_callback()")
 {
   auto mock = create_ipasir2_doctest_mock();
-  ip2::ipasir2 api = ip2::ipasir2::create();
+  ip2::ipasir2 api = ip2::create_api();
 
   SUBCASE("Successfully set and clear terminate callback")
   {

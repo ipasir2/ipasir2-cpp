@@ -11,7 +11,7 @@ using ip2::optional_bool;
 TEST_CASE("solver::lit_value()")
 {
   auto mock = create_ipasir2_doctest_mock();
-  ip2::ipasir2 api = ip2::ipasir2::create();
+  ip2::ipasir2 api = ip2::create_api();
 
 
   SUBCASE("Successfully query truth value of a literal")
@@ -74,7 +74,7 @@ TEST_CASE("solver::lit_value()")
 TEST_CASE("solver::assumption_failed()")
 {
   auto mock = create_ipasir2_doctest_mock();
-  ip2::ipasir2 api = ip2::ipasir2::create();
+  ip2::ipasir2 api = ip2::create_api();
 
 
   SUBCASE("Successfully query if a literal is failed")

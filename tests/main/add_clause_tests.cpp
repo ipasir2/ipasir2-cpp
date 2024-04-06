@@ -13,7 +13,7 @@ namespace ip2 = ipasir2;
 TEST_CASE("solver::add() functions")
 {
   auto mock = create_ipasir2_doctest_mock();
-  ip2::ipasir2 api = ip2::ipasir2::create();
+  ip2::ipasir2 api = ip2::create_api();
   std::vector<int32_t> clause_3lits = {1, -2, 3};
 
   using ip2::redundancy;

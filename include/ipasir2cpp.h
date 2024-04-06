@@ -854,33 +854,6 @@ private:
 /// to call IPASIR-2 functions that are not tied to a solver instance.
 class ipasir2 {
 public:
-  template <typename = void /* prevent instantiation unless called */>
-  static ipasir2 create()
-  {
-    // Ideally, this would just be the default constructor of `ipasir2`.
-    // However, clients then would get linker errors if a `ipasir2` object
-    // is accidentally default-constructed and they don't link to IPASIR2
-    // at build time.
-    return ipasir2{detail::shared_c_api::with_linked_syms()};
-  }
-
-
-  template <typename = void /* prevent instantiation unless called */>
-  static ipasir2 create(std::filesystem::path const& shared_library)
-  {
-#if defined(IPASIR2CPP_HAS_DLOPEN)
-    return ipasir2{detail::shared_c_api::load(shared_library)};
-#else
-    static_assert("ipasir2cpp.h does not support loading shared libraries at runtime on this "
-                  "platform yet. See the documentation of ipasir2::create_from_api_struct() for a "
-                  "workaround.");
-#endif
-  }
-
-
-  static ipasir2 create_from_api_struct(detail::shared_c_api api) { return ipasir2{api}; }
-
-
   std::unique_ptr<solver> create_solver() { return solver::create(m_api); }
 
 
@@ -897,9 +870,34 @@ public:
   ipasir2(ipasir2&&) noexcept = default;
   ipasir2& operator=(ipasir2&&) noexcept = default;
 
-private:
+
   explicit ipasir2(detail::shared_c_api const& api) : m_api{api} {}
 
+private:
   detail::shared_c_api m_api;
 };
+
+
+template <typename = void /* prevent instantiation unless called */>
+static ipasir2 create_api()
+{
+  // Ideally, this would just be the default constructor of `ipasir2`.
+  // However, clients then would get linker errors if a `ipasir2` object
+  // is accidentally default-constructed and they don't link to IPASIR2
+  // at build time.
+  return ipasir2{detail::shared_c_api::with_linked_syms()};
+}
+
+
+template <typename = void /* prevent instantiation unless called */>
+static ipasir2 create_api(std::filesystem::path const& shared_library)
+{
+#if defined(IPASIR2CPP_HAS_DLOPEN)
+  return ipasir2{detail::shared_c_api::load(shared_library)};
+#else
+  static_assert("ipasir2cpp.h does not support loading shared libraries at runtime on this "
+                "platform yet.");
+#endif
+}
+
 }

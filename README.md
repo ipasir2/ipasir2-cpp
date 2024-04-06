@@ -14,8 +14,8 @@ See the `examples` directory. The most basic one is `01_readme.cpp`:
 namespace ip2 = ipasir2;
 
 try {
-  ip2::ipasir2 api = ip2::ipasir2::create();
-  // For dynamic loading: ip2::ipasir2 api = ip2::ipasir2::create("./solver.so");
+  ip2::ipasir2 api = ip2::create_api();
+  // For dynamic loading: ip2::ipasir2 api = ip2::create_api("./solver.so");
 
   std::unique_ptr<ip2::solver> solver = api.create_solver();
   solver->add(1, 2, 3);

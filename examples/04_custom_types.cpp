@@ -97,7 +97,7 @@ void example_04_custom_types()
   PRINT_FILENAME();
 
   try {
-    ip2::ipasir2 api = ip2::ipasir2::create();
+    ip2::ipasir2 api = ip2::create_api();
     std::unique_ptr<ip2::solver> solver = api.create_solver();
 
     own_clause clause1{{1, 2, 3}};

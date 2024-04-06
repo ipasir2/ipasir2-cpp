@@ -31,7 +31,7 @@ void example_03_find_backbones()
   PRINT_FILENAME();
 
   try {
-    ip2::ipasir2 api = ip2::ipasir2::create();
+    ip2::ipasir2 api = ip2::create_api();
     auto solver = api.create_solver();
 
     dimacs_parser parser{path_of_cnf(cnf_file)};

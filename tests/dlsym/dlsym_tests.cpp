@@ -62,7 +62,7 @@ TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
   mock_lib mock_shared_obj{library_file};
   auto mock = mock_shared_obj.create_ipasir2_mock();
 
-  ip2::ipasir2 api = ip2::ipasir2::create(library_file);
+  ip2::ipasir2 api = ip2::create_api(library_file);
 
   std::vector<ipasir2_option> const test_options
       = {ipasir2_option{"test_option_1", -1000, 1000, IPASIR2_S_CONFIG, 1, 0, nullptr},

@@ -25,7 +25,7 @@ void example_02_trivial_portfolio()
   PRINT_FILENAME();
 
   try {
-    ip2::ipasir2 api = ip2::ipasir2::create();
+    ip2::ipasir2 api = ip2::create_api();
 
     std::vector<std::unique_ptr<ip2::solver>> solvers;
     for (size_t idx = 0; idx < num_threads; ++idx) {
