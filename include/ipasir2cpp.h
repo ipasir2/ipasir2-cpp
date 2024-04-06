@@ -177,6 +177,15 @@ template <typename Lit>
 struct lit_traits {};
 
 
+template <>
+struct lit_traits<int32_t> {
+  static int32_t to_ipasir2_lit(int32_t literal) { return literal; }
+
+
+  static int32_t from_ipasir2_lit(int32_t literal) { return literal; }
+};
+
+
 namespace detail {
   class shared_c_api {
   public:
@@ -283,11 +292,6 @@ namespace detail {
   /// use custom literal types with the IPASIR-2 wrapper.
   template <typename T, typename = void>
   struct is_literal : public std::false_type {};
-
-
-  template <typename T>
-  struct is_literal<T, std::enable_if_t<std::is_same_v<std::decay_t<T>, int32_t>>>
-    : public std::true_type {};
 
 
   template <typename T>
@@ -578,15 +582,17 @@ public:
   /// \brief Returns the literal's value in the current assignment.
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
-  optional_bool lit_value(int32_t lit) const
+  template <typename Lit>
+  optional_bool lit_value(Lit lit) const
   {
+    int32_t const ipasir2_lit = lit_traits<Lit>::to_ipasir2_lit(lit);
     int32_t result = 0;
-    detail::throw_if_failed(m_api.val(m_handle.get(), lit, &result), "ipasir2_val");
+    detail::throw_if_failed(m_api.val(m_handle.get(), ipasir2_lit, &result), "ipasir2_val");
 
-    if (result == lit) {
+    if (result == ipasir2_lit) {
       return optional_bool{true};
     }
-    else if (result == -lit) {
+    else if (result == -ipasir2_lit) {
       return optional_bool{false};
     }
     else if (result == 0) {
@@ -602,10 +608,12 @@ public:
   ///        in the last invocation of solve().
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
-  bool assumption_failed(int32_t lit) const
+  template <typename Lit>
+  bool assumption_failed(Lit lit) const
   {
+    int32_t const ipasir2_lit = lit_traits<Lit>::to_ipasir2_lit(lit);
     int32_t result = 0;
-    detail::throw_if_failed(m_api.failed(m_handle.get(), lit, &result), "ipasir2_failed");
+    detail::throw_if_failed(m_api.failed(m_handle.get(), ipasir2_lit, &result), "ipasir2_failed");
 
     if (result != 0 && result != 1) {
       throw ipasir2_error{"Unknown truth value received from solver"};

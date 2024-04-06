@@ -1,5 +1,6 @@
 #include <ipasir2cpp.h>
 
+#include "custom_types.h"
 #include "ipasir2_mock_doctest.h"
 
 #include <doctest.h>
@@ -26,6 +27,23 @@ TEST_CASE("solver::lit_value()")
     CHECK_EQ(solver->lit_value(-13), optional_bool{false});
     CHECK_EQ(solver->lit_value(14), optional_bool{false});
     CHECK_EQ(solver->lit_value(15), optional_bool{});
+  }
+
+  SUBCASE("Successfully query truth value of a literal with custom literal type")
+  {
+    using custom_lit_test::lit;
+
+    mock->expect_init_call(1);
+    mock->expect_call(1, val_call{13, 13, IPASIR2_E_OK});
+    mock->expect_call(1, val_call{-13, 13, IPASIR2_E_OK});
+    mock->expect_call(1, val_call{14, -14, IPASIR2_E_OK});
+    mock->expect_call(1, val_call{15, 0, IPASIR2_E_OK});
+
+    auto solver = api.create_solver();
+    CHECK_EQ(solver->lit_value(lit{13, true}), optional_bool{true});
+    CHECK_EQ(solver->lit_value(lit{13, false}), optional_bool{false});
+    CHECK_EQ(solver->lit_value(lit{14, true}), optional_bool{false});
+    CHECK_EQ(solver->lit_value(lit{15, true}), optional_bool{});
   }
 
 
@@ -68,6 +86,20 @@ TEST_CASE("solver::assumption_failed()")
     auto solver = api.create_solver();
     CHECK(solver->assumption_failed(2));
     CHECK_FALSE(solver->assumption_failed(-1));
+  }
+
+
+  SUBCASE("Successfully query if a literal is failed with custom literal type")
+  {
+    using custom_lit_test::lit;
+
+    mock->expect_init_call(1);
+    mock->expect_call(1, failed_call{2, 1, IPASIR2_E_OK});
+    mock->expect_call(1, failed_call{-1, 0, IPASIR2_E_OK});
+
+    auto solver = api.create_solver();
+    CHECK(solver->assumption_failed(lit{2, true}));
+    CHECK_FALSE(solver->assumption_failed(lit{1, false}));
   }
 
 
