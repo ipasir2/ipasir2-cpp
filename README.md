@@ -3,7 +3,15 @@
 C++ porcelain for IPASIR-2
 
 
-**Caveat:** Like IPASIR-2, this project is work in progress.
+**Caveat:** Like IPASIR-2, this project is work in progress. See [changelog](CHANGELOG.md).
+
+
+## How to use
+
+This library is header-only. Add this repository as a submodule and add the `include` directory
+to your include path.
+
+TODO: link latest release tag, add git command
 
 
 ## Example
@@ -72,36 +80,3 @@ catch (ip2::ipasir2_error const& error) {
 `ipasir2cpp.h` and the tests require C++17. The code in the `examples` directory requires C++20.
 
 **TODO:** minimum compiler versions
-
-
-
-## Progress
-
-All IPASIR-2 functions will eventually be supported. Currently, the wrapper covers the
-following functions:
-
- - [x] `ipasir2_signature`
- - [x] `ipasir2_init`
- - [x] `ipasir2_release`
- - [x] `ipasir2_options`
- - [x] `ipasir2_set_option`
- - [x] `ipasir2_add`
- - [x] `ipasir2_solve`
- - [x] `ipasir2_val`
- - [x] `ipasir2_failed`
- - [x] `ipasir2_set_terminate`
- - [x] `ipasir2_set_export`
- - [ ] `ipasir2_set_import`
- - [ ] `ipasir2_set_notify`
-
-
-Features:
-
- - [x] Support for `dlopen()`
- - [x] Support for custom clause types
- - [x] Support for custom literal types
- - [x] Support for functionality also covered by IPASIR-1
- - [x] Options API
- - [ ] Support for importing clauses
- - [ ] Support for observing the current partial assignment
- - [x] Namespace versioning
