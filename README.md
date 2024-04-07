@@ -8,10 +8,11 @@ C++ porcelain for IPASIR-2
 
 ## How to use
 
-This library is header-only. Add this repository as a submodule and add the `include` directory
-to your include path.
+This library is header-only. An easy way for integrating this library is to add it as a Git
+submodule, and add the `include` directory to your include path. Alternatively, you can copy
+the headers into your application.
 
-TODO: link latest release tag, add git command
+TODO: link latest release tag
 
 
 ## Example

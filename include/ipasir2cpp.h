@@ -1,4 +1,6 @@
-// C++ wrapper for IPASIR-2 solvers
+// C++ wrapper for IPASIR-2 solvers (current development version)
+//
+// https://github.com/ipasir2/ipasir2-cpp
 //
 // Copyright (c) 2024 Felix Kutzner
 // This file is subject to the MIT license (https://spdx.org/licenses/MIT.html).
