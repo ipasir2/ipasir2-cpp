@@ -44,8 +44,8 @@ catch (ip2::ipasir2_error const& error) {
 
 - **Easy to use**. `ipasir2-cpp` plays well with STL data structures, but also with
   custom clause and literal types. Integration is easy as well: `ipasir2-cpp` consists
-  of a single header file `ipasir2cpp.h`, which only requires `ipasir2.h` in your include
-  path. No compiler flags or `#define`s needed.
+  of two header files `ipasir2cpp.h` and (optionally) `ipasir2cpp_dl.h`, requiring only
+  `ipasir2.h` in your include path. No compiler flags or `#define`s needed.
 
 - **Flexible**. The wrapper supports solvers linked to your binary at build time as
   well as loading solver libraries at execution time. It is not necessary to link to

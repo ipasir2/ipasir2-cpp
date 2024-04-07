@@ -15,7 +15,6 @@
 #include <ipasir2.h>
 
 #include <exception>
-#include <filesystem>
 #include <functional>
 #include <iterator>
 #include <memory>
@@ -32,11 +31,6 @@
 
 #if __cpp_lib_span
 #include <span>
-#endif
-
-#if __has_include(<dlfcn.h>)
-#include <dlfcn.h>
-#define IPASIR2CPP_HAS_DLOPEN
 #endif
 
 
@@ -190,49 +184,30 @@ struct lit_traits<int32_t> {
 };
 
 
+class dll {
+public:
+  dll() {}
+  virtual ~dll() {}
+
+  template <typename T>
+  void load_func_sym(T& func_ptr, std::string_view name) const
+  {
+    func_ptr = reinterpret_cast<T>(get_sym(name));
+  }
+
+
+  dll(dll const& rhs) = delete;
+  dll& operator=(dll const& rhs) = delete;
+  dll(dll&& rhs) = delete;
+  dll& operator=(dll&& rhs) = delete;
+
+protected:
+  virtual void* get_sym(std::string_view name) const = 0;
+};
+
+
 namespace detail {
-  class shared_c_api {
-  public:
-#if defined(IPASIR2CPP_HAS_DLOPEN)
-    static shared_c_api load(std::filesystem::path const& shared_lib)
-    {
-      shared_c_api result;
-      load_lib(shared_lib, result);
-      load_sym(result.add, "ipasir2_add", result);
-      load_sym(result.failed, "ipasir2_failed", result);
-      load_sym(result.init, "ipasir2_init", result);
-      load_sym(result.options, "ipasir2_options", result);
-      load_sym(result.release, "ipasir2_release", result);
-      load_sym(result.set_export, "ipasir2_set_export", result);
-      load_sym(result.set_option, "ipasir2_set_option", result);
-      load_sym(result.set_terminate, "ipasir2_set_terminate", result);
-      load_sym(result.signature, "ipasir2_signature", result);
-      load_sym(result.solve, "ipasir2_solve", result);
-      load_sym(result.val, "ipasir2_val", result);
-      return result;
-    }
-#endif
-
-
-    template <typename = void /* prevent instantiation unless called */>
-    static shared_c_api with_linked_syms()
-    {
-      shared_c_api result;
-      result.add = &ipasir2_add;
-      result.failed = &ipasir2_failed;
-      result.init = &ipasir2_init;
-      result.options = &ipasir2_options;
-      result.release = &ipasir2_release;
-      result.set_export = &ipasir2_set_export;
-      result.set_option = &ipasir2_set_option;
-      result.set_terminate = &ipasir2_set_terminate;
-      result.signature = &ipasir2_signature;
-      result.solve = &ipasir2_solve;
-      result.val = &ipasir2_val;
-      return result;
-    }
-
-
+  struct shared_c_api {
     decltype(&ipasir2_add) add = nullptr;
     decltype(&ipasir2_failed) failed = nullptr;
     decltype(&ipasir2_init) init = nullptr;
@@ -244,38 +219,7 @@ namespace detail {
     decltype(&ipasir2_signature) signature = nullptr;
     decltype(&ipasir2_solve) solve = nullptr;
     decltype(&ipasir2_val) val = nullptr;
-
-
-  private:
-    // Unlike IPASIR-2 solver handles, the shared-library handle is not accessible
-    // since it is an implementation detail, not an IPASIR-2 item.
-    std::shared_ptr<void> m_lib_handle;
-
-
-#if defined(IPASIR2CPP_HAS_DLOPEN)
-    static void load_lib(std::filesystem::path const& path, shared_c_api& api)
-    {
-      api.m_lib_handle = std::shared_ptr<void>(dlopen(path.c_str(), RTLD_NOW), [](void* lib) {
-        if (lib != nullptr) {
-          dlclose(lib);
-        }
-      });
-
-      if (api.m_lib_handle == nullptr) {
-        throw ipasir2_error{"Could not open the IPASIR2 library."};
-      }
-    }
-
-    template <typename F>
-    static void load_sym(F& func_ptr, std::string_view name, shared_c_api& api)
-    {
-      func_ptr = reinterpret_cast<F>(dlsym(api.m_lib_handle.get(), name.data()));
-
-      if (func_ptr == nullptr) {
-        throw ipasir2_error{"Missing symbol in the IPASIR2 library."};
-      }
-    }
-#endif
+    std::shared_ptr<dll const> m_dll;
   };
 
 
@@ -879,25 +823,48 @@ private:
 
 
 template <typename = void /* prevent instantiation unless called */>
-static ipasir2 create_api()
+ipasir2 create_api()
 {
   // Ideally, this would just be the default constructor of `ipasir2`.
   // However, clients then would get linker errors if a `ipasir2` object
   // is accidentally default-constructed and they don't link to IPASIR2
   // at build time.
-  return ipasir2{detail::shared_c_api::with_linked_syms()};
+
+  detail::shared_c_api ipasir2_funcs;
+  ipasir2_funcs.add = &ipasir2_add;
+  ipasir2_funcs.failed = &ipasir2_failed;
+  ipasir2_funcs.init = &ipasir2_init;
+  ipasir2_funcs.options = &ipasir2_options;
+  ipasir2_funcs.release = &ipasir2_release;
+  ipasir2_funcs.set_export = &ipasir2_set_export;
+  ipasir2_funcs.set_option = &ipasir2_set_option;
+  ipasir2_funcs.set_terminate = &ipasir2_set_terminate;
+  ipasir2_funcs.signature = &ipasir2_signature;
+  ipasir2_funcs.solve = &ipasir2_solve;
+  ipasir2_funcs.val = &ipasir2_val;
+
+  return ipasir2{ipasir2_funcs};
 }
 
 
-template <typename = void /* prevent instantiation unless called */>
-static ipasir2 create_api(std::filesystem::path const& shared_library)
+inline ipasir2 create_api(std::shared_ptr<dll const> dll)
 {
-#if defined(IPASIR2CPP_HAS_DLOPEN)
-  return ipasir2{detail::shared_c_api::load(shared_library)};
-#else
-  static_assert("ipasir2cpp.h does not support loading shared libraries at runtime on this "
-                "platform yet.");
-#endif
+  detail::shared_c_api ipasir2_funcs;
+
+  ipasir2_funcs.m_dll = dll;
+  dll->load_func_sym(ipasir2_funcs.add, "ipasir2_add");
+  dll->load_func_sym(ipasir2_funcs.failed, "ipasir2_failed");
+  dll->load_func_sym(ipasir2_funcs.init, "ipasir2_init");
+  dll->load_func_sym(ipasir2_funcs.options, "ipasir2_options");
+  dll->load_func_sym(ipasir2_funcs.release, "ipasir2_release");
+  dll->load_func_sym(ipasir2_funcs.set_export, "ipasir2_set_export");
+  dll->load_func_sym(ipasir2_funcs.set_option, "ipasir2_set_option");
+  dll->load_func_sym(ipasir2_funcs.set_terminate, "ipasir2_set_terminate");
+  dll->load_func_sym(ipasir2_funcs.signature, "ipasir2_signature");
+  dll->load_func_sym(ipasir2_funcs.solve, "ipasir2_solve");
+  dll->load_func_sym(ipasir2_funcs.val, "ipasir2_val");
+
+  return ipasir2{ipasir2_funcs};
 }
 
 }

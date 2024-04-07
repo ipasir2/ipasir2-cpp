@@ -1,11 +1,11 @@
 #include <ipasir2cpp.h>
+#include <ipasir2cpp_dl.h>
 
 #include "mock/ipasir2_mock.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest.h>
 
-#include <dlfcn.h>
 
 #include <array>
 #include <filesystem>
@@ -16,23 +16,10 @@ namespace ip2 = ipasir2;
 /// Class for managing the IPASIR2 mock library loaded at runtime
 class mock_lib {
 public:
-  // The deleter type is spelled out explicitly, because gcc warns about ignored
-  // attributes if decltype(&dlerror) is used instead
-  using unique_lib_handle = std::unique_ptr<void, int (*)(void*)>;
-
-  explicit mock_lib(std::filesystem::path const& path) : m_lib{nullptr, nullptr}
+  explicit mock_lib(std::filesystem::path const& path) : m_dll{path}
   {
-    m_lib = unique_lib_handle{dlopen(path.c_str(), RTLD_NOW), dlclose};
-    if (m_lib == nullptr) {
-      throw std::runtime_error{dlerror()};
-    }
-
-    m_new_fn = reinterpret_cast<new_fn>(dlsym(m_lib.get(), "new_ipasir2_mock"));
-    m_delete_fn = reinterpret_cast<delete_fn>(dlsym(m_lib.get(), "delete_ipasir2_mock"));
-
-    if (m_new_fn == nullptr || m_delete_fn == nullptr) {
-      throw std::runtime_error{dlerror()};
-    }
+    m_dll.load_func_sym(m_new_fn, "new_ipasir2_mock");
+    m_dll.load_func_sym(m_delete_fn, "delete_ipasir2_mock");
   }
 
 
@@ -52,7 +39,7 @@ public:
 private:
   new_fn m_new_fn = nullptr;
   delete_fn m_delete_fn = nullptr;
-  unique_lib_handle m_lib;
+  ip2::detail::dll_impl m_dll;
 };
 
 
