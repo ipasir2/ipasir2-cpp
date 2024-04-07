@@ -5,8 +5,15 @@
 // SPDX-License-Identifier: MIT
 
 /// \file
+///
+/// Functions for loading IPASIR-2 implementations at runtime. This header is
+/// split off from ipasir2cpp.h to avoid including system headers there.
 
 #pragma once
+
+#if __cplusplus < 201703L
+#error "ipasir2cpp.h requires C++17 or newer"
+#endif
 
 #include <ipasir2cpp.h>
 
@@ -100,6 +107,10 @@ namespace detail {
 }
 
 
+/// \brief Creates an `ipasir2` object using an IPASIR-2 implementation selected at runtime.
+///
+/// \throws `ipasir2_error` if the library can't be loaded or IPASIR-2 symbols are missing
+///         in the library.
 inline ipasir2 create_api(std::filesystem::path const& library)
 {
   return create_api(std::make_shared<detail::dll_impl>(library));

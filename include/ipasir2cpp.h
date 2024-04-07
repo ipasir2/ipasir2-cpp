@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 
 /// \file
+///
+/// Main header of ipasir2-cpp, defining all platform-agnostic functionality.
 
 #pragma once
 
@@ -380,9 +382,7 @@ class solver {
 public:
   /// \brief Adds the literals in [start, stop) as a clause to the solver.
   ///
-  /// \tparam Iter This type can be one of:
-  ///               - iterator type with values convertible to `int32_t`
-  ///               - pointer type which is convertible to `int32_t const*`
+  /// \tparam Iter Iterator over literals, or a pointer to a literal type (e.g. `int32_t const*`)
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename Iter, typename = detail::enable_unless_literal_t<Iter>>
@@ -400,14 +400,8 @@ public:
   /// For example, this function can be used to add literals stored in a `std::vector<int32_t>`,
   /// or in a custom clause type (see requirements below).
   ///
-  /// NB: For custom clause types, performance can be gained when the iterator type satisfies
-  /// `std::contiguous_iterator` and C++20 is used. The IPASIR2 wrapper will then directly pass
-  /// the buffer to the solver. For C++17 and earlier, the clause is copied unless `LitContainer`
-  /// is a `std::vector`, or has pointer-type iterators.
-  ///
-  /// \tparam LitContainer A type for which `begin()` and `end()` functions return either
-  ///                       - iterators with values convertible to `int32_t`
-  ///                       - pointers convertible to `int32_t const*`.
+  /// \tparam LitContainer A type for which `begin()` and `end()` functions return iterators over
+  ///                      literals, or pointers to a contigous buffer of literals.
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename LitContainer, typename = detail::enable_if_lit_container_t<LitContainer>>
@@ -461,6 +455,8 @@ public:
   /// \returns If the solver produced a result, a boolean value is returned representing
   ///          the satisfiability of the problem instance. Otherwise, nothing is returned.
   ///
+  /// \tparam Iter Iterator over literals, or a pointer to a literal type (e.g. `int32_t const*`)
+  ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename Iter, typename = detail::enable_unless_literal_t<Iter>>
   optional_bool solve(Iter assumptions_start, Iter assumptions_stop)
@@ -482,6 +478,9 @@ public:
   ///
   /// \returns If the solver produced a result, a boolean value is returned representing
   ///          the satisfiability of the problem instance. Otherwise, nothing is returned.
+  ///
+  /// \tparam LitContainer A type for which `begin()` and `end()` functions return iterators over
+  ///                      literals, or pointers to a contigous buffer of literals.
   ///
   /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename LitContainer, typename = detail::enable_if_lit_container_t<LitContainer>>
@@ -571,6 +570,17 @@ public:
   }
 
 
+  /// \brief Sets a callback function for aborting the solve process.
+  ///
+  /// The solver calls this function regularly during solve(). If it returns `true`,
+  /// the SAT search is aborted.
+  ///
+  /// If an exception is thrown from the callback, no further callbacks are invoked until
+  /// solve() has finished. The exception is rethrown from solve().
+  ///
+  /// \tparam Func A callable without parameters that returns a value testable as a `bool`.
+  ///
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename Func>
   void set_terminate_callback(Func&& callback)
   {
@@ -606,6 +616,7 @@ public:
   }
 
 
+  /// \brief Disables the callback set via `set_terminate_callback()`.
   void clear_terminate_callback()
   {
     m_terminate_callback = {};
@@ -614,6 +625,17 @@ public:
   }
 
 
+  /// \brief Sets a callback for observing learnt clauses.
+  ///
+  /// The solver calls this function during solve() for all learnt clauses of size `max_size` or less.
+  ///
+  /// If an exception is thrown from the callback, no further callbacks are invoked until
+  /// solve() has finished. The exception is rethrown from solve().
+  ///
+  /// \tparam Func A callable with parameter `ipasir2::clause_view<Lit>` or `std::span<Lit const>` for
+  ///              any literal type Lit (e.g. int32_t).
+  ///
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   template <typename Lit = int32_t, typename Func>
   void set_export_callback(Func&& callback, size_t max_size = 0)
   {
@@ -656,6 +678,7 @@ public:
   }
 
 
+  /// \brief Disables the callback set via `set_export_callback()`.
   void clear_export_callback()
   {
     m_export_callback = {};
@@ -798,9 +821,18 @@ private:
 /// to call IPASIR-2 functions that are not tied to a solver instance.
 class ipasir2 {
 public:
+  /// \brief Creates a solver instance.
+  ///
+  /// The lifetime of the created solver instance may exceed the lifetime of the `ipasir2`
+  /// object used to create it.
+  ///
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   std::unique_ptr<solver> create_solver() { return solver::create(m_api); }
 
 
+  /// \brief Returns the name and the version of the IPASIR-2 implementation.
+  ///
+  /// \throws `ipasir2_error` if the underlying IPASIR2 implementation indicated an error.
   std::string signature() const
   {
     char const* result = nullptr;
@@ -822,6 +854,7 @@ private:
 };
 
 
+/// \brief Creates an `ipasir2` object using an IPASIR-2 implementation linked at build time.
 template <typename = void /* prevent instantiation unless called */>
 ipasir2 create_api()
 {
@@ -847,6 +880,13 @@ ipasir2 create_api()
 }
 
 
+/// \brief Creates an `ipasir2` object using an IPASIR-2 implementation selected at runtime.
+///
+/// This overload does not load the IPASIR-2 library, but uses the abstract `dll` interface.
+/// An overload taking a std::filesystem::path to an IPASIR-2 library is provided in
+/// `ipasir2cpp_dl.h`.
+///
+/// \throws `ipasir2_error` if IPASIR-2 symbols are missing in the library.
 inline ipasir2 create_api(std::shared_ptr<dll const> dll)
 {
   detail::shared_c_api ipasir2_funcs;
