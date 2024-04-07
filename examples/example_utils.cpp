@@ -31,7 +31,7 @@ struct dimacs_token {
 
 class dimacs_tokens {
 public:
-  explicit dimacs_tokens(fs::path const& path) : m_file{fopen(path.c_str(), "r"), fclose}
+  explicit dimacs_tokens(fs::path const& path) : m_file{fopen(path.string().c_str(), "r"), fclose}
   {
     if (!m_file) {
       throw parse_error{std::string{"Could not open file "} + path.string()};

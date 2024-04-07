@@ -66,11 +66,6 @@ catch (ip2::ipasir2_error const& error) {
 - **Support for IPASIR-1**. This is also not planned, to avoid extra complexity. The main IPASIR-2
   repository provides code for wrapping IPASIR-1 solvers in the IPASIR-2 API.
 
-- **Out-of-the-box support for loading solvers at execution time on non-POSIX platforms**. For
-  loading solvers at execution time, the wrapper only supports `dlopen()`. On other platforms,
-  clients need to provide a `dlfcn.h` implementation, or to fill a structure containing the
-  IPASIR-2 function pointers when instantiating the API.
-
 
 ## Supported compilers
 

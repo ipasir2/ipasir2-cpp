@@ -9,6 +9,7 @@
 
 #include <array>
 #include <filesystem>
+#include <string_view>
 
 
 namespace ip2 = ipasir2;
@@ -16,7 +17,7 @@ namespace ip2 = ipasir2;
 /// Class for managing the IPASIR2 mock library loaded at runtime
 class mock_lib {
 public:
-  explicit mock_lib(std::filesystem::path const& path) : m_dll{path}
+  mock_lib() : m_dll{mock_dll_path}
   {
     m_dll.load_func_sym(m_new_fn, "new_ipasir2_mock");
     m_dll.load_func_sym(m_delete_fn, "delete_ipasir2_mock");
@@ -36,6 +37,13 @@ public:
   }
 
 
+#if defined(WIN32)
+  constexpr static std::string_view mock_dll_path = "./ipasir2mock.dll";
+#else
+  constexpr static std::string_view mock_dll_path = "./ipasir2mock.so";
+#endif
+
+
 private:
   new_fn m_new_fn = nullptr;
   delete_fn m_delete_fn = nullptr;
@@ -45,11 +53,10 @@ private:
 
 TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
 {
-  std::filesystem::path const library_file = "./libipasir2mock.so";
-  mock_lib mock_shared_obj{library_file};
+  mock_lib mock_shared_obj;
   auto mock = mock_shared_obj.create_ipasir2_mock();
 
-  ip2::ipasir2 api = ip2::create_api(library_file);
+  ip2::ipasir2 api = ip2::create_api(mock_lib::mock_dll_path);
 
   std::vector<ipasir2_option> const test_options
       = {ipasir2_option{"test_option_1", -1000, 1000, IPASIR2_S_CONFIG, 1, 0, nullptr},

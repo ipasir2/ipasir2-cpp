@@ -1,3 +1,9 @@
+if(WIN32)
+  # Currently the minisat dependency can't be built in cross-compilation
+  return()
+endif()
+
+
 include(${CMAKE_CURRENT_LIST_DIR}/../testdeps/ipasir2/buildutils/load_solvers.cmake)
 
 load_minisat()
