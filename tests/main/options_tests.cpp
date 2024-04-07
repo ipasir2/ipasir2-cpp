@@ -22,7 +22,8 @@ TEST_CASE("solver::get_option() and solver::set_option()")
 
   std::vector<ipasir2_option> test_options
       = {ipasir2_option{"test_option_1", -1000, 1000, IPASIR2_S_CONFIG, 1, 0, nullptr},
-         ipasir2_option{"test_option_2", 0, 100, IPASIR2_S_SOLVING, 0, 1, nullptr}};
+         ipasir2_option{"test_option_2", 0, 100, IPASIR2_S_SOLVING, 0, 1, nullptr},
+         ipasir2_option{nullptr, 0, 0, IPASIR2_S_SOLVING, 0, 0, nullptr}};
 
 
   SUBCASE("Successfully call get_option()")
