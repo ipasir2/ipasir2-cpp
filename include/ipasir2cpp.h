@@ -314,6 +314,11 @@ namespace detail {
   std::pair<int32_t const*, size_t>
   as_contiguous_int32s(Iter start, Iter stop, std::vector<int32_t>& buffer)
   {
+    if (start == stop) {
+      buffer = {0};
+      return {buffer.data(), 0};
+    }
+
     if constexpr (detail::is_contiguous_int32_iter<Iter>) {
       // In this case, the data is already placed in a buffer of int32_t, which can be directly used:
       return {&*start, std::distance(start, stop)};
