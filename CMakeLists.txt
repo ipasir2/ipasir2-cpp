@@ -1,7 +1,7 @@
 # This project contains the ipasir2-cpp tests and examples. Building it is not
 # required for using ipasir2cpp.h in other software.
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.19)
 project(ipasir2-cpp-tests)
 
 
@@ -16,7 +16,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-add_library(ipasir2cpp INTERFACE)
+add_library(ipasir2cpp INTERFACE
+  include/ipasir2cpp.h
+  include/ipasir2cpp_dl.h
+)
+
 target_include_directories(ipasir2cpp INTERFACE include)
 target_link_libraries(ipasir2cpp INTERFACE ipasir2)
 

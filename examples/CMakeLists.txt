@@ -14,6 +14,7 @@ add_executable(examples-all
   03_find_backbones.cpp
   04_custom_types.cpp
   example_utils.cpp
+  example_utils.h
   main.cpp
 )
 

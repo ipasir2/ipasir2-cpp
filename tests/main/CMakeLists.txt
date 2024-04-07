@@ -1,6 +1,8 @@
 set(sources
   add_clause_tests.cpp
+  custom_types.h
   detail_tests.cpp
+  ipasir2_mock_doctest.h
   ipasir2_mock_tests.cpp
   options_tests.cpp
   query_lit_tests.cpp
