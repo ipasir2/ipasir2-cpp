@@ -104,4 +104,4 @@ Features:
  - [x] Options API
  - [ ] Support for importing clauses
  - [ ] Support for observing the current partial assignment
- - [ ] Namespace versioning
+ - [x] Namespace versioning

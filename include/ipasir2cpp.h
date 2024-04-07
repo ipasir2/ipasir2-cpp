@@ -36,7 +36,15 @@
 #endif
 
 
+// An inline namespace is used to prevent ODR issues: ipasir2_<major>_<minor>_<patch>[_dev]
+// Unfortunately, clang-format's "Inner" namespace formatting rule only supports not indenting
+// the outermost namespace, but not the outermost two namespaces. To avoid needless indentation:
+#define IPASIR2CPP_BEGIN_INLINE_NAMESPACE inline namespace ipasir2_0_0_0_dev {
+#define IPASIR2CPP_END_INLINE_NAMESPACE }
+
+
 namespace ipasir2 {
+IPASIR2CPP_BEGIN_INLINE_NAMESPACE
 
 namespace detail {
   inline std::string get_description(ipasir2_errorcode errorcode)
@@ -907,4 +915,5 @@ inline ipasir2 create_api(std::shared_ptr<dll const> dll)
   return ipasir2{ipasir2_funcs};
 }
 
+IPASIR2CPP_END_INLINE_NAMESPACE
 }

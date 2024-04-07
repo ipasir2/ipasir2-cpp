@@ -29,6 +29,7 @@
 
 
 namespace ipasir2 {
+IPASIR2CPP_BEGIN_INLINE_NAMESPACE
 
 namespace detail {
 #if defined(WIN32)
@@ -115,4 +116,6 @@ inline ipasir2 create_api(std::filesystem::path const& library)
 {
   return create_api(std::make_shared<detail::dll_impl>(library));
 }
+
+IPASIR2CPP_END_INLINE_NAMESPACE
 }
