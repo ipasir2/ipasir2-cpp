@@ -32,14 +32,14 @@ try {
   solver->add(-2);
 
   if (auto result = solver->solve(); result.has_value()) {
-    std::cout << std::format("Result: {}\n", result.unwrap() ? "SAT" : "UNSAT");
+    print("Result: {}", result.unwrap() ? "SAT" : "UNSAT");
   }
   else {
-    std::cout << "The solver did not produce a result.\n";
+    print("The solver did not produce a result.");
   }
 }
 catch (ip2::ipasir2_error const& error) {
-  std::cerr << std::format("Could not solve the formula: {}\n", error.what());
+  print("Could not solve the formula: {}", error.what());
 }
 ```
 
