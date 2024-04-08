@@ -62,9 +62,8 @@ catch (ip2::ipasir2_error const& error) {
 
 - **Efficient**. `ipasir2-cpp` avoids adding overhead where possible.
 
-- **Modern**. Features that are not part of C++17, but useful for an IPASIR-2 wrapper
-  (concepts library, `std::span`) are used if supported by the standard library used by
-  the client.
+- **Modern**. Post-C++17 features (for example improved detection of contiguous iterators
+  via concepts, or `std::span` support) are used if available.
 
 
 ### Non-goals
@@ -81,3 +80,10 @@ catch (ip2::ipasir2_error const& error) {
 `ipasir2cpp.h` and the tests require C++17. The code in the `examples` directory requires C++20.
 
 **TODO:** minimum compiler versions
+
+
+## Supported platforms
+
+The platform-agnostic parts of `ipasir2-cpp` are defined in `ipasir2cpp.h`. This header contains
+all functionality except for loading solver libraries at runtime, which is implemented in
+a separate (and optional) header `ipasir2cpp_dl.h` for POSIX and Windows systems.
