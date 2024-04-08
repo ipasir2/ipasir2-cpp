@@ -1,8 +1,11 @@
 #include <ipasir2cpp.h>
 
+#include <string_view>
+
 #include "example_utils.h"
 
 namespace ip2 = ipasir2;
+using namespace std::literals;
 
 
 void example_01_readme()
@@ -18,12 +21,8 @@ void example_01_readme()
     solver->add(-1);
     solver->add(-2);
 
-    if (auto result = solver->solve(); result.has_value()) {
-      print("Result: {}", result.unwrap() ? "SAT" : "UNSAT");
-    }
-    else {
-      print("The solver did not produce a result.");
-    }
+    auto result = solver->solve();
+    print("Result: {}", result.map("sat"sv, "unsat"sv, "unknown"sv));
   }
   catch (ip2::ipasir2_error const& error) {
     print("Could not solve the formula: {}", error.what());
