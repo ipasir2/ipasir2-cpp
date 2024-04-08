@@ -108,10 +108,12 @@ private:
   template <typename Func>
   std::optional<char> skip_chars_while(Func&& char_predicate)
   {
-    std::optional<char> next = ' ';
-    while (next.has_value() && char_predicate(*next)) {
+    std::optional<char> next;
+
+    do {
       next = read_char();
-    }
+    } while (next.has_value() && char_predicate(*next));
+
     return next;
   }
 
