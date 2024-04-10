@@ -5,7 +5,7 @@
 #include <list>
 #include <vector>
 
-#include <doctest.h>
+#include <catch2/catch_test_macros.hpp>
 
 
 namespace ip2 = ipasir2;
@@ -32,19 +32,19 @@ static_assert(ip2::detail::is_literal_v<custom_lit_test::lit const>);
 
 TEST_CASE("detail::as_contiguous_int32s()")
 {
-  SUBCASE("For std::vector<int32_t>, the buffer is directly returned")
+  SECTION("For std::vector<int32_t>, the buffer is directly returned")
   {
     std::vector<int32_t> input = {1, 2, 3};
     std::vector<int32_t> buffer;
 
     auto const& [lit_ptr, size]
         = ip2::detail::as_contiguous_int32s(input.begin(), input.end(), buffer);
-    CHECK_EQ(lit_ptr, input.data());
-    CHECK_EQ(size, 3);
+    CHECK(lit_ptr == input.data());
+    CHECK(size == 3);
   }
 
 
-  SUBCASE("For std::list<int32_t>, the literals are copied")
+  SECTION("For std::list<int32_t>, the literals are copied")
   {
     std::list<int32_t> input = {1, -2, 3};
     std::vector<int32_t> buffer;
@@ -52,13 +52,13 @@ TEST_CASE("detail::as_contiguous_int32s()")
     auto const& [lit_ptr, size]
         = ip2::detail::as_contiguous_int32s(input.begin(), input.end(), buffer);
 
-    CHECK_EQ(lit_ptr, buffer.data());
-    CHECK_EQ(size, 3);
-    CHECK_EQ(buffer, std::vector{1, -2, 3});
+    CHECK(lit_ptr == buffer.data());
+    CHECK(size == 3);
+    CHECK(buffer == std::vector{1, -2, 3});
   }
 
 
-  SUBCASE("For std::vector<custom_lit_test::lit>, the literals are copied")
+  SECTION("For std::vector<custom_lit_test::lit>, the literals are copied")
   {
     using custom_lit_test::lit;
     std::vector<lit> input = {lit{1, true}, lit{2, false}, lit{3, true}};
@@ -67,21 +67,21 @@ TEST_CASE("detail::as_contiguous_int32s()")
     auto const& [lit_ptr, size]
         = ip2::detail::as_contiguous_int32s(input.begin(), input.end(), buffer);
 
-    CHECK_EQ(lit_ptr, buffer.data());
-    CHECK_EQ(size, 3);
-    CHECK_EQ(buffer, std::vector{1, -2, 3});
+    CHECK(lit_ptr == buffer.data());
+    CHECK(size == 3);
+    CHECK(buffer == std::vector{1, -2, 3});
   }
 
 
-  SUBCASE("For empty inputs, a size-zero buffer is returned")
+  SECTION("For empty inputs, a size-zero buffer is returned")
   {
     std::vector<int32_t> input;
     std::vector<int32_t> buffer;
 
     auto const& [lit_ptr, size]
         = ip2::detail::as_contiguous_int32s(input.begin(), input.end(), buffer);
-    CHECK_EQ(lit_ptr, buffer.data());
-    CHECK_EQ(size, 0);
-    CHECK_EQ(buffer.size(), 1);
+    CHECK(lit_ptr == buffer.data());
+    CHECK(size == 0);
+    CHECK(buffer.size() == 1);
   }
 }

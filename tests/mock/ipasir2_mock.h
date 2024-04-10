@@ -91,11 +91,9 @@ public:
   /// Callback that is called when the IPASIR2 functions are called in
   /// some unexpected fashion (wrong order, wrong arguments, missing calls)
   ///
-  /// The callback is supposed to call doctest's FAIL(). This cannot be done
-  /// inside the mock, since the mock is compiled as a shared library (this,
-  /// again, is used for testing the load-at-runtime behavior of the IPASIR2
-  /// wrapper) and that in turn causes obscure symbol lookup problems when
-  /// loading the mock library via dlopen().
+  /// The callback is supposed to cause the test to fail. This is extracted
+  /// into a callback so the mock shared library doesn't need to link to the
+  /// test framework, and the mock itself can be tested more cleanly.
   virtual void set_fail_observer(std::function<void(std::string_view)> const& callback) = 0;
 
   virtual void expect_init_call(instance_id instance_id) = 0;

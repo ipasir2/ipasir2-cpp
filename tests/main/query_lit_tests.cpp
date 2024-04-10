@@ -1,20 +1,20 @@
 #include <ipasir2cpp.h>
 
 #include "custom_types.h"
-#include "ipasir2_mock_doctest.h"
+#include "ipasir2_mock_factory.h"
 
-#include <doctest.h>
+#include <catch2/catch_test_macros.hpp>
 
 namespace ip2 = ipasir2;
 using ip2::optional_bool;
 
 TEST_CASE("solver::lit_value()")
 {
-  auto mock = create_ipasir2_doctest_mock();
+  auto mock = create_ipasir2_test_mock();
   ip2::ipasir2 api = ip2::create_api();
 
 
-  SUBCASE("Successfully query truth value of a literal")
+  SECTION("Successfully query truth value of a literal")
   {
     mock->expect_init_call(1);
     mock->expect_call(1, val_call{13, 13, IPASIR2_E_OK});
@@ -23,13 +23,13 @@ TEST_CASE("solver::lit_value()")
     mock->expect_call(1, val_call{15, 0, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    CHECK_EQ(solver->lit_value(13), optional_bool{true});
-    CHECK_EQ(solver->lit_value(-13), optional_bool{false});
-    CHECK_EQ(solver->lit_value(14), optional_bool{false});
-    CHECK_EQ(solver->lit_value(15), optional_bool{});
+    CHECK(solver->lit_value(13) == optional_bool{true});
+    CHECK(solver->lit_value(-13) == optional_bool{false});
+    CHECK(solver->lit_value(14) == optional_bool{false});
+    CHECK(solver->lit_value(15) == optional_bool{});
   }
 
-  SUBCASE("Successfully query truth value of a literal with custom literal type")
+  SECTION("Successfully query truth value of a literal with custom literal type")
   {
     using custom_lit_test::lit;
 
@@ -40,30 +40,30 @@ TEST_CASE("solver::lit_value()")
     mock->expect_call(1, val_call{15, 0, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    CHECK_EQ(solver->lit_value(lit{13, true}), optional_bool{true});
-    CHECK_EQ(solver->lit_value(lit{13, false}), optional_bool{false});
-    CHECK_EQ(solver->lit_value(lit{14, true}), optional_bool{false});
-    CHECK_EQ(solver->lit_value(lit{15, true}), optional_bool{});
+    CHECK(solver->lit_value(lit{13, true}) == optional_bool{true});
+    CHECK(solver->lit_value(lit{13, false}) == optional_bool{false});
+    CHECK(solver->lit_value(lit{14, true}) == optional_bool{false});
+    CHECK(solver->lit_value(lit{15, true}) == optional_bool{});
   }
 
 
-  SUBCASE("Throws when solver indicates error")
+  SECTION("Throws when solver indicates error")
   {
     mock->expect_init_call(1);
     mock->expect_call(1, val_call{2, 2, IPASIR2_E_INVALID_ARGUMENT});
 
     auto solver = api.create_solver();
-    CHECK_THROWS_AS(solver->lit_value(2), ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->lit_value(2), ip2::ipasir2_error);
   }
 
 
-  SUBCASE("Throws when solver returns invalid value")
+  SECTION("Throws when solver returns invalid value")
   {
     mock->expect_init_call(1);
     mock->expect_call(1, val_call{13, 1, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    CHECK_THROWS_AS(solver->lit_value(13), ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->lit_value(13), ip2::ipasir2_error);
   }
 
 
@@ -73,11 +73,11 @@ TEST_CASE("solver::lit_value()")
 
 TEST_CASE("solver::assumption_failed()")
 {
-  auto mock = create_ipasir2_doctest_mock();
+  auto mock = create_ipasir2_test_mock();
   ip2::ipasir2 api = ip2::create_api();
 
 
-  SUBCASE("Successfully query if a literal is failed")
+  SECTION("Successfully query if a literal is failed")
   {
     mock->expect_init_call(1);
     mock->expect_call(1, failed_call{2, 1, IPASIR2_E_OK});
@@ -89,7 +89,7 @@ TEST_CASE("solver::assumption_failed()")
   }
 
 
-  SUBCASE("Successfully query if a literal is failed with custom literal type")
+  SECTION("Successfully query if a literal is failed with custom literal type")
   {
     using custom_lit_test::lit;
 
@@ -103,25 +103,25 @@ TEST_CASE("solver::assumption_failed()")
   }
 
 
-  SUBCASE("Throws when solver indicates error")
+  SECTION("Throws when solver indicates error")
   {
     mock->expect_init_call(1);
     mock->expect_call(1, failed_call{2, 0, IPASIR2_E_INVALID_ARGUMENT});
 
     auto solver = api.create_solver();
-    CHECK_THROWS_AS(solver->assumption_failed(2), ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->assumption_failed(2), ip2::ipasir2_error);
   }
 
 
-  SUBCASE("Throws when solver returns invalid value")
+  SECTION("Throws when solver returns invalid value")
   {
     mock->expect_init_call(1);
     mock->expect_call(1, failed_call{13, -1, IPASIR2_E_OK});
     mock->expect_call(1, failed_call{13, 2, IPASIR2_E_OK});
 
     auto solver = api.create_solver();
-    CHECK_THROWS_AS(solver->assumption_failed(13), ip2::ipasir2_error const&);
-    CHECK_THROWS_AS(solver->assumption_failed(13), ip2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->assumption_failed(13), ip2::ipasir2_error);
+    CHECK_THROWS_AS(solver->assumption_failed(13), ip2::ipasir2_error);
   }
 
 

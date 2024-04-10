@@ -19,7 +19,7 @@ function(add_test_executables BASENAME)
     endif()
 
     target_include_directories(${name} PRIVATE ${test_base_dir})
-    target_link_libraries(${name} PRIVATE ipasir2cpp doctest)
+    target_link_libraries(${name} PRIVATE ipasir2cpp Catch2::Catch2WithMain)
 
     add_test(NAME ${name} COMMAND ${name} WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   endforeach()

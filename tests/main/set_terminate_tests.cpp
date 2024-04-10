@@ -1,17 +1,18 @@
 #include <ipasir2cpp.h>
 
-#include "ipasir2_mock_doctest.h"
+#include "ipasir2_mock_factory.h"
 
-#include <doctest.h>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 
 namespace ip2 = ipasir2;
 
 TEST_CASE("solver::set_terminate_callback()")
 {
-  auto mock = create_ipasir2_doctest_mock();
+  auto mock = create_ipasir2_test_mock();
   ip2::ipasir2 api = ip2::create_api();
 
-  SUBCASE("Successfully set and clear terminate callback")
+  SECTION("Successfully set and clear terminate callback")
   {
     mock->expect_init_call(1);
     auto solver = api.create_solver();
@@ -24,14 +25,14 @@ TEST_CASE("solver::set_terminate_callback()")
       return true;
     });
     mock->simulate_terminate_callback_call(1, true);
-    CHECK_EQ(num_cb_calls, std::vector<int>{1, 0, 0});
+    CHECK(num_cb_calls == std::vector<int>{1, 0, 0});
 
     solver->set_terminate_callback([&]() {
       ++num_cb_calls[1];
       return false;
     });
     mock->simulate_terminate_callback_call(1, false);
-    CHECK_EQ(num_cb_calls, std::vector<int>{1, 1, 0});
+    CHECK(num_cb_calls == std::vector<int>{1, 1, 0});
 
     mock->expect_call(1, set_terminate_call{false, IPASIR2_E_OK});
     solver->clear_terminate_callback();
@@ -42,22 +43,21 @@ TEST_CASE("solver::set_terminate_callback()")
       return true;
     });
     mock->simulate_terminate_callback_call(1, true);
-    CHECK_EQ(num_cb_calls, std::vector<int>{1, 1, 1});
+    CHECK(num_cb_calls == std::vector<int>{1, 1, 1});
   }
 
 
-  SUBCASE("Exception is thrown when set_terminate_callback() fails")
+  SECTION("Exception is thrown when set_terminate_callback() fails")
   {
     mock->expect_init_call(1);
     auto solver = api.create_solver();
 
     mock->expect_call(1, set_terminate_call{true, IPASIR2_E_UNSUPPORTED});
-    CHECK_THROWS_AS(solver->set_terminate_callback([&]() { return true; }),
-                    ipasir2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->set_terminate_callback([&]() { return true; }), ipasir2::ipasir2_error);
   }
 
 
-  SUBCASE("When clear_terminate_callback() fails, exception is thrown and old callback is not "
+  SECTION("When clear_terminate_callback() fails, exception is thrown and old callback is not "
           "called anymore")
   {
     mock->expect_init_call(1);
@@ -72,14 +72,14 @@ TEST_CASE("solver::set_terminate_callback()")
     });
 
     mock->expect_call(1, set_terminate_call{false, IPASIR2_E_UNKNOWN});
-    CHECK_THROWS_AS(solver->clear_terminate_callback(), ipasir2::ipasir2_error const&);
+    CHECK_THROWS_AS(solver->clear_terminate_callback(), ipasir2::ipasir2_error);
 
     mock->simulate_terminate_callback_call(1, false);
-    CHECK_EQ(num_cb_calls, 0);
+    CHECK(num_cb_calls == 0);
   }
 
 
-  SUBCASE("When an exception is thrown in the callback, it is rethrown once from solve()")
+  SECTION("When an exception is thrown in the callback, it is rethrown once from solve()")
   {
     mock->expect_init_call(1);
     auto solver = api.create_solver();
@@ -94,24 +94,27 @@ TEST_CASE("solver::set_terminate_callback()")
 
     mock->simulate_terminate_callback_call(1, true);
 
-    SUBCASE("Check solve() overload without assumptions")
+    SECTION("Check solve() overload without assumptions")
     {
       mock->expect_call(1, solve_call{{}, 10, IPASIR2_E_OK});
-      CHECK_THROWS_WITH_AS(solver->solve(), "test exception", std::runtime_error const&);
+      CHECK_THROWS_MATCHES(
+          solver->solve(), std::runtime_error, Catch::Matchers::Message("test exception"));
 
       mock->expect_call(1, solve_call{{}, 10, IPASIR2_E_OK});
-      CHECK_EQ(solver->solve(), ip2::optional_bool{true});
+      CHECK(solver->solve() == ip2::optional_bool{true});
     }
 
-    SUBCASE("Check solve() overload with assumptions")
+    SECTION("Check solve() overload with assumptions")
     {
       std::vector<int32_t> assumptions = {1, 2};
 
       mock->expect_call(1, solve_call{assumptions, 10, IPASIR2_E_OK});
-      CHECK_THROWS_WITH_AS(solver->solve(assumptions), "test exception", std::runtime_error const&);
+      CHECK_THROWS_MATCHES(solver->solve(assumptions),
+                           std::runtime_error,
+                           Catch::Matchers::Message("test exception"));
 
       mock->expect_call(1, solve_call{assumptions, 10, IPASIR2_E_OK});
-      CHECK_EQ(solver->solve(assumptions), ip2::optional_bool{true});
+      CHECK(solver->solve(assumptions) == ip2::optional_bool{true});
     }
   }
 

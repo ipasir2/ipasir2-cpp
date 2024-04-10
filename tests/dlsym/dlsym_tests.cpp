@@ -3,9 +3,7 @@
 
 #include "mock/ipasir2_mock.h"
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest.h>
-
+#include <catch2/catch_test_macros.hpp>
 
 #include <array>
 #include <filesystem>
@@ -66,7 +64,7 @@ TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
   using opt_bool = ip2::optional_bool;
 
   mock->set_signature("test 1.0", IPASIR2_E_OK);
-  CHECK_EQ(api.signature(), "test 1.0");
+  CHECK(api.signature() == "test 1.0");
 
   {
     mock->expect_init_call(1);
@@ -106,10 +104,10 @@ TEST_CASE("Call functions in dynamically loaded IPASIR2 library")
     solver1->set_export_callback([](ip2::clause_view<int32_t>) {}, 0);
     solver1->set_terminate_callback([]() { return false; });
 
-    CHECK_EQ(solver1->solve(), opt_bool{true});
-    CHECK_EQ(solver1->lit_value(2), opt_bool{true});
+    CHECK(solver1->solve() == opt_bool{true});
+    CHECK(solver1->lit_value(2) == opt_bool{true});
 
-    CHECK_EQ(solver2->solve(std::array{1}), opt_bool{false});
+    CHECK(solver2->solve(std::array{1}) == opt_bool{false});
     CHECK(solver2->assumption_failed(1));
   }
 

@@ -2,13 +2,9 @@
 
 #include "mock/ipasir2_mock.h"
 
-// Required by doctest.h when using Microsoft STL
-#include <iostream>
+#include <catch2/catch_test_macros.hpp>
 
-#include <doctest.h>
-
-
-inline std::unique_ptr<ipasir2_mock, decltype(&delete_ipasir2_mock)> create_ipasir2_doctest_mock()
+inline std::unique_ptr<ipasir2_mock, decltype(&delete_ipasir2_mock)> create_ipasir2_test_mock()
 {
   auto result = std::unique_ptr<ipasir2_mock, decltype(&delete_ipasir2_mock)>(new_ipasir2_mock(),
                                                                               delete_ipasir2_mock);

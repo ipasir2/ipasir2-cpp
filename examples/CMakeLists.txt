@@ -34,6 +34,6 @@ add_executable(example-utils-testsuite
   example_utils_tests.cpp
 )
 
-target_link_libraries(example-utils-testsuite PRIVATE doctest)
+target_link_libraries(example-utils-testsuite PRIVATE Catch2::Catch2WithMain)
 
 add_test(NAME example-utils-testsuite COMMAND example-utils-testsuite)

@@ -1,7 +1,6 @@
 #include "example_utils.h"
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest.h>
+#include <catch2/catch_test_macros.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -46,21 +45,21 @@ TEST_CASE("Read DIMACS file")
 1 0
 )";
 
-  CHECK_EQ(parse_cnf(input), formula{{1, 2}, {-1, 3, 4}, {1}});
+  CHECK(parse_cnf(input) == formula{{1, 2}, {-1, 3, 4}, {1}});
 }
 
 
 TEST_CASE("Read DIMACS file without line breaks")
 {
   auto input = R"(p cnf 4 2 1 2 0 -1 3 4 0 1 0)";
-  CHECK_EQ(parse_cnf(input), formula{{1, 2}, {-1, 3, 4}, {1}});
+  CHECK(parse_cnf(input) == formula{{1, 2}, {-1, 3, 4}, {1}});
 }
 
 
 TEST_CASE("Read DIMACS empty file")
 {
   auto input = R"(p cnf 0 0)";
-  CHECK_EQ(parse_cnf(input), formula{});
+  CHECK(parse_cnf(input) == formula{});
 }
 
 
@@ -68,7 +67,7 @@ TEST_CASE("Read DIMACS empty file beginning with comment")
 {
   auto input = R"(c comment comment2
 p cnf 0 0)";
-  CHECK_EQ(parse_cnf(input), formula{});
+  CHECK(parse_cnf(input) == formula{});
 }
 
 
@@ -76,7 +75,7 @@ TEST_CASE("Read DIMACS empty file beginning with empty comment")
 {
   auto input = R"(c
 p cnf 0 0)";
-  CHECK_EQ(parse_cnf(input), formula{});
+  CHECK(parse_cnf(input) == formula{});
 }
 
 
@@ -84,7 +83,7 @@ TEST_CASE("Read DIMACS file with empty clause and no vars")
 {
   auto input = R"(p cnf 0 1
                   0)";
-  CHECK_EQ(parse_cnf(input), formula{{}});
+  CHECK(parse_cnf(input) == formula{{}});
 }
 
 
@@ -95,7 +94,7 @@ TEST_CASE("Read DIMACS file ending in comment")
 -1 3 4 0
 1 0
 c comment)";
-  CHECK_EQ(parse_cnf(input), formula{{1, 2}, {-1, 3, 4}, {1}});
+  CHECK(parse_cnf(input) == formula{{1, 2}, {-1, 3, 4}, {1}});
 }
 
 
@@ -108,7 +107,7 @@ c comment 1
 
   c comment 2
 1 0)";
-  CHECK_EQ(parse_cnf(input), formula{{1, 2}, {-1, 3, 4}, {1}});
+  CHECK(parse_cnf(input) == formula{{1, 2}, {-1, 3, 4}, {1}});
 }
 
 
@@ -119,7 +118,7 @@ TEST_CASE("Read DIMACS file ending in empty comment")
 -1 3 4 0
 1 0
 c)";
-  CHECK_EQ(parse_cnf(input), formula{{1, 2}, {-1, 3, 4}, {1}});
+  CHECK(parse_cnf(input) == formula{{1, 2}, {-1, 3, 4}, {1}});
 }
 
 
@@ -129,7 +128,7 @@ TEST_CASE("Read DIMACS file with empty clause and some vars")
                   1 2 0
                   0
                   -1 -2 0)";
-  CHECK_EQ(parse_cnf(input), formula{{1, 2}, {}, {-1, -2}});
+  CHECK(parse_cnf(input) == formula{{1, 2}, {}, {-1, -2}});
 }
 
 
@@ -139,20 +138,20 @@ TEST_CASE("Read DIMACS file with comment starting in clause")
 1 2 c 1 4 5
 -1 3 4 0
 1 0)";
-  CHECK_EQ(parse_cnf(input), formula{{1, 2, -1, 3, 4}, {1}});
+  CHECK(parse_cnf(input) == formula{{1, 2, -1, 3, 4}, {1}});
 }
 
 
 TEST_CASE("Read DIMACS file with out-of-range literal")
 {
-  CHECK_THROWS_AS(parse_cnf("p cnf 1 1\n-10000000000 0"), parse_error const&);
-  CHECK_THROWS_AS(parse_cnf("p cnf 1 1\n10000000000 0"), parse_error const&);
+  CHECK_THROWS_AS(parse_cnf("p cnf 1 1\n-10000000000 0"), parse_error);
+  CHECK_THROWS_AS(parse_cnf("p cnf 1 1\n10000000000 0"), parse_error);
 }
 
 
 TEST_CASE("Read DIMACS file with invalid literal")
 {
-  CHECK_THROWS_AS(parse_cnf("p cnf 1 1\n+10 0"), parse_error const&);
-  CHECK_THROWS_AS(parse_cnf("p cnf 1 1\nabc 0"), parse_error const&);
-  CHECK_THROWS_AS(parse_cnf("p cnf 1 1\n1abc 0"), parse_error const&);
+  CHECK_THROWS_AS(parse_cnf("p cnf 1 1\n+10 0"), parse_error);
+  CHECK_THROWS_AS(parse_cnf("p cnf 1 1\nabc 0"), parse_error);
+  CHECK_THROWS_AS(parse_cnf("p cnf 1 1\n1abc 0"), parse_error);
 }
