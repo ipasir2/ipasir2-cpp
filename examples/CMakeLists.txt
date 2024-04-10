@@ -19,7 +19,6 @@ add_executable(examples-all
 )
 
 target_link_libraries(examples-all PRIVATE ipasir2cpp minisat)
-target_compile_options(examples-all PRIVATE ${IPASIR2_CXX_OPTS})
 
 
 if (NOT WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -36,6 +35,5 @@ add_executable(example-utils-testsuite
 )
 
 target_link_libraries(example-utils-testsuite PRIVATE doctest)
-target_compile_options(example-utils-testsuite PRIVATE ${IPASIR2_CXX_OPTS})
 
 add_test(NAME example-utils-testsuite COMMAND example-utils-testsuite)
