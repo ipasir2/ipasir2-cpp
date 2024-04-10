@@ -1,3 +1,5 @@
+/// This example shows how to use custom clause and literal types with the IPASIR-2 wrapper.
+
 #include <ipasir2cpp.h>
 
 #include "example_utils.h"

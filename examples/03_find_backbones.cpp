@@ -1,3 +1,6 @@
+/// This example is a simple backbone-finder application. The backbone of a satisfiable
+/// formula is the set of literals that are true in all its satisfying assignments.
+
 #include <ipasir2cpp.h>
 
 #include "example_utils.h"

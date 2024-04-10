@@ -1,3 +1,8 @@
+/// ipasir2_mock is an implementation of the IPASIR-2 API for testing the
+/// wrapper. Tests can define sequences of expected calls and mocked
+/// responses, and the mock implementation checks that the wrapper's
+/// behavior matches the expectations.
+
 #pragma once
 
 #include <cstdint>
@@ -74,6 +79,10 @@ public:
 using instance_id = intptr_t;
 
 
+/// \brief IPASIR-2 API mock
+///
+/// At most one object of this class can exist at any time. That object controls
+/// the behavior of the mock's ipasir2_* functions, and checks their invocations.
 class ipasir2_mock {
 public:
   ipasir2_mock() = default;
@@ -125,6 +134,9 @@ public:
 };
 
 
+// new() and delete() functions are exposed instead of a std::unique_ptr-based factory
+// function to make dlopen()-based tests work - these can only look up functions with
+// unmangled names:
 extern "C" {
 IPASIR_API ipasir2_mock* new_ipasir2_mock();
 IPASIR_API void delete_ipasir2_mock(ipasir2_mock const* mock);

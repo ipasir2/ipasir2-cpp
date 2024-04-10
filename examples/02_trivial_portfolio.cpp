@@ -1,3 +1,6 @@
+/// This example shows how to use the option interface in IPASIR-2, and how to
+/// run multiple IPASIR-2 solvers concurrently.
+
 #include <ipasir2cpp.h>
 
 #include <atomic>
@@ -61,7 +64,7 @@ void example_02_trivial_portfolio()
               return s.time_since_start() >= timeout || result.load().has_value();
             });
 
-            solver->set_option("ipasir.yolo", 1);
+            solver->set_option("ipasir.yolo", 1); // enables one-shot solving
             diversify(*solver, idx, max_var);
 
             if (auto local_result = solver->solve(); local_result.has_value()) {
@@ -85,6 +88,8 @@ void example_02_trivial_portfolio()
 
 void diversify(ip2::solver& solver, size_t solver_index, int32_t max_var)
 {
+  // Since option lookup via name is O(|options|) and the options are
+  // set for each variable, the option handles are looked up once here:
   ip2::option vsids_opt = solver.get_option("ipasir.vsids.initial");
   ip2::option phase_opt = solver.get_option("ipasir.phase.initial");
 

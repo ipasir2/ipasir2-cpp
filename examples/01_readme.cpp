@@ -1,3 +1,6 @@
+/// A trivial example showing how to solve the formula `{{1, 2, 3}, {-1}, {-2}}`
+/// with ipasir2-cpp.
+
 #include <ipasir2cpp.h>
 
 #include <string_view>
