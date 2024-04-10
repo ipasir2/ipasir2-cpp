@@ -551,8 +551,6 @@ ipasir2_errorcode
 ipasir2_set_option(void* solver, ipasir2_option const* handle, int64_t value, int64_t index)
 {
   return check_ipasir2_call<set_option_call>(solver, [&](set_option_call const& spec) {
-    instance_id const solver_id = reinterpret_cast<instance_id>(solver);
-
     if (std::string_view{handle->name} != spec.name) {
       throw ipasir2_mock_error{"unexpected name"};
     }

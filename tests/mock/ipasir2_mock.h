@@ -126,6 +126,6 @@ public:
 
 
 extern "C" {
-ipasir2_mock* new_ipasir2_mock();
-void delete_ipasir2_mock(ipasir2_mock const* mock);
+IPASIR_API ipasir2_mock* new_ipasir2_mock();
+IPASIR_API void delete_ipasir2_mock(ipasir2_mock const* mock);
 }

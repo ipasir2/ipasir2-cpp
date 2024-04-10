@@ -18,6 +18,7 @@
 
 #include <ipasir2.h>
 
+#include <array>
 #include <exception>
 #include <functional>
 #include <iterator>
