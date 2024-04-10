@@ -3,17 +3,19 @@ set(test_base_dir ${CMAKE_CURRENT_LIST_DIR})
 function(add_test_executables BASENAME)
   foreach(cxx_standard IN ITEMS 17 20)
     set(name ${BASENAME}-cpp${cxx_standard})
+
     add_executable(${name} ${ARGN})
+    set_target_properties(${name} PROPERTIES CXX_STANDARD ${cxx_standard})
 
     if (NOT WIN32)
       set(sanitizers "-fsanitize=address,undefined")
-      target_compile_options(${name} PRIVATE -Wall -Wextra -pedantic ${sanitizers})
+      target_compile_options(${name} PRIVATE ${sanitizers})
       target_link_options(${name} PRIVATE ${sanitizers})
     endif()
 
-    target_link_libraries(${name} PRIVATE ipasir2cpp doctest)
+    target_compile_options(${name} PRIVATE ${IPASIR2_CXX_OPTS} ${sanitizers})
     target_include_directories(${name} PRIVATE ${test_base_dir})
-    set_target_properties(${name} PROPERTIES CXX_STANDARD ${cxx_standard})
+    target_link_libraries(${name} PRIVATE ipasir2cpp doctest)
 
     add_test(NAME ${name} COMMAND ${name} WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   endforeach()

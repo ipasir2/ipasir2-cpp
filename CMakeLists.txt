@@ -26,6 +26,37 @@ target_include_directories(ipasir2cpp INTERFACE include)
 target_link_libraries(ipasir2cpp INTERFACE ipasir2)
 
 
+if (MSVC)
+  set(IPASIR2_CXX_OPTS
+    # Use Unicode Windows APIs and keep Windows.h from #define'ing min() and max().
+    # TODO: add support for projects without /UNICODE
+    /DUNICODE
+    /DNOMINMAX
+
+    # Make MSVC define __cplusplus. This is a constant defined in the standard.
+    # TODO: find another way to detect C++17 with MSVC, so ipasir2cpp.h doesn't require this flag
+    /Zc:__cplusplus
+
+    /permissive-
+    /W4
+
+    # TODO: fix size types in ipasir2.h, use size_t instead of int32_t
+    # The following two warnings are related to possible loss of data when implicitly casting ints
+    # to narrower types. This happens for instance when std::vector<int32>::size() is used with
+    # ipasir2_add().
+    /wd4267
+    /wd4244
+  )
+else()
+  # Assume GCC or clang:
+  set(IPASIR2_CXX_OPTS
+    -Wall
+    -Wextra
+    -Wunused
+    -pedantic
+  )
+endif()
+
 # In this project, ctest executes all testsuites as well as the example code
 enable_testing()
 
