@@ -38,7 +38,8 @@ public:
   ipasir2_mock_impl()
   {
     if (s_current_mock != nullptr) {
-      throw ipasir2_mock_error{"ipasir2_mock_impl already exists"};
+      std::cerr << "Test setup failed: ipasir2_mock_impl already exists" << std::endl;
+      std::terminate();
     }
 
     s_current_mock = this;
@@ -113,7 +114,7 @@ public:
     try {
       actual_cb_result = callback(cookie);
     }
-    catch(...) {
+    catch (...) {
       fail_test("An exception was thrown from the terminate callback into the solver");
       return;
     }
@@ -137,7 +138,7 @@ public:
     try {
       callback(cookie, clause.data());
     }
-    catch(...) {
+    catch (...) {
       fail_test("An exception was thrown from export callback back into the solver");
     }
   }
@@ -348,8 +349,12 @@ ipasir2_errorcode ipasir2_signature(char const** result)
     *result = signature.c_str();
     return signature.empty() ? IPASIR2_E_UNSUPPORTED : IPASIR2_E_OK;
   }
-  catch (ipasir2_mock_error const& error) {
+  catch (std::exception const& error) {
     fail_test(error.what());
+    return IPASIR2_E_UNKNOWN;
+  }
+  catch (...) {
+    fail_test("caught unknown exception in ipasir2_signature()");
     return IPASIR2_E_UNKNOWN;
   }
 }
@@ -368,8 +373,12 @@ ipasir2_errorcode ipasir2_init(void** result)
 
     return next.return_value;
   }
-  catch (ipasir2_mock_error const& error) {
+  catch (std::exception const& error) {
     fail_test(error.what());
+    return IPASIR2_E_UNKNOWN;
+  }
+  catch (...) {
+    fail_test("caught unknown exception in ipasir2_init()");
     return IPASIR2_E_UNKNOWN;
   }
 }
@@ -389,8 +398,12 @@ ipasir2_errorcode ipasir2_release(void* solver)
     s_current_mock->change_aliveness(instance, false);
     return IPASIR2_E_OK;
   }
-  catch (ipasir2_mock_error const& error) {
+  catch (std::exception const& error) {
     fail_test(error.what());
+    return IPASIR2_E_UNKNOWN;
+  }
+  catch (...) {
+    fail_test("caught unknown exception in ipasir2_release()");
     return IPASIR2_E_UNKNOWN;
   }
 }
@@ -409,8 +422,12 @@ check_ipasir2_call(void* solver,
 
     return check_function(spec);
   }
-  catch (ipasir2_mock_error const& error) {
+  catch (std::exception const& error) {
     fail_test(error.what());
+    return IPASIR2_E_UNKNOWN;
+  }
+  catch (...) {
+    fail_test("caught unknown exception in IPASIR-2 function");
     return IPASIR2_E_UNKNOWN;
   }
 }
