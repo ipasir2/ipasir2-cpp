@@ -1,9 +1,36 @@
 #include "ipasir2_mock_factory.h"
 
+#include <string_view>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
+
+namespace {
+class mock_failure_observer {
+public:
+  explicit mock_failure_observer(
+      std::unique_ptr<ipasir2_mock, decltype(&delete_ipasir2_mock)>& mock)
+    : m_mock{mock.get()}, m_failed{false}
+  {
+    m_mock->set_fail_observer([this](std::string_view) { m_failed = true; });
+  }
+
+
+  ~mock_failure_observer()
+  {
+    m_mock->set_fail_observer([](std::string_view) {});
+  }
+
+
+  bool observed_fail() const { return m_failed; }
+
+
+private:
+  ipasir2_mock* m_mock;
+  bool m_failed;
+};
+}
 
 TEST_CASE("Happy-path example")
 {
@@ -37,19 +64,25 @@ TEST_CASE("Happy-path example")
 }
 
 
-TEST_CASE("Test fails on unexpected ipasir2_init()", "[!shouldfail]")
+TEST_CASE("Test fails on unexpected ipasir2_init()")
 {
   auto mock = create_ipasir2_test_mock();
+  mock_failure_observer fail_observer{mock};
+
   void* solver = nullptr;
 
   // The next mock ID has not been set in `mock`, so ipasir2_init() fails.
   ipasir2_init(&solver);
+
+  CHECK(fail_observer.observed_fail());
 }
 
 
-TEST_CASE("Test fails on unexpected subsequent ipasir2_init()", "[!shouldfail]")
+TEST_CASE("Test fails on unexpected subsequent ipasir2_init()")
 {
   auto mock = create_ipasir2_test_mock();
+  mock_failure_observer fail_observer{mock};
+
   void* solver1 = nullptr;
   void* solver2 = nullptr;
 
@@ -58,31 +91,39 @@ TEST_CASE("Test fails on unexpected subsequent ipasir2_init()", "[!shouldfail]")
 
   // Only one mock ID has not been set in `mock`, so ipasir2_init() fails.
   ipasir2_init(&solver2);
+
+  CHECK(fail_observer.observed_fail());
 }
 
 
 TEST_CASE("Test fails when next instance is expected, but ipasir2_init is not called before next "
-          "is expected",
-          "[!shouldfail]")
+          "is expected")
 {
   auto mock = create_ipasir2_test_mock();
+
   mock->expect_init_call(1);
-  mock->expect_init_call(2);
+  CHECK_THROWS(mock->expect_init_call(2));
 }
 
 
-TEST_CASE("Test fails on unexpected release", "[!shouldfail]")
+TEST_CASE("Test fails on unexpected release")
 {
   auto mock = create_ipasir2_test_mock();
+  mock_failure_observer fail_observer{mock};
+
   int not_a_solver = 42;
 
   ipasir2_release(&not_a_solver);
+
+  CHECK(fail_observer.observed_fail());
 }
 
 
-TEST_CASE("Test fails on double-release of solvers", "[!shouldfail]")
+TEST_CASE("Test fails on double-release of solvers")
 {
   auto mock = create_ipasir2_test_mock();
+  mock_failure_observer fail_observer{mock};
+
   void* solver = nullptr;
 
   mock->expect_init_call(1);
@@ -90,6 +131,8 @@ TEST_CASE("Test fails on double-release of solvers", "[!shouldfail]")
 
   ipasir2_release(solver);
   ipasir2_release(solver);
+
+  CHECK(fail_observer.observed_fail());
 }
 
 
@@ -154,10 +197,11 @@ TEST_CASE("Mock allows expected ipasir2_add calls")
 }
 
 
-TEST_CASE("Test fails when ipasir2_add is expected, but a different function is called instead",
-          "[!shouldfail]")
+TEST_CASE("Test fails when ipasir2_add is expected, but a different function is called instead")
 {
   auto mock = create_ipasir2_test_mock();
+  mock_failure_observer fail_observer{mock};
+
   void* solver = nullptr;
 
   mock->expect_init_call(1);
@@ -170,13 +214,16 @@ TEST_CASE("Test fails when ipasir2_add is expected, but a different function is 
   int result = 0;
   ipasir2_solve(solver, &result, nullptr, 0);
   ipasir2_release(solver);
+
+  CHECK(fail_observer.observed_fail());
 }
 
 
-TEST_CASE("Test fails when ipasir2_add is expected, but the solver is released instead",
-          "[!shouldfail]")
+TEST_CASE("Test fails when ipasir2_add is expected, but the solver is released instead")
 {
   auto mock = create_ipasir2_test_mock();
+  mock_failure_observer fail_observer{mock};
+
   void* solver = nullptr;
 
   mock->expect_init_call(1);
@@ -186,24 +233,30 @@ TEST_CASE("Test fails when ipasir2_add is expected, but the solver is released i
 
   mock->expect_call(1, add_call{clause, IPASIR2_R_NONE, IPASIR2_E_OK});
   ipasir2_release(solver);
+
+  CHECK(fail_observer.observed_fail());
 }
 
 
-TEST_CASE("Unreleased instances are detected", "[!shouldfail]")
+TEST_CASE("Unreleased instances are detected")
 {
   auto mock = create_ipasir2_test_mock();
+
   std::vector<void*> solvers{2};
 
   CHECK(!mock->has_outstanding_expects());
   mock->expect_init_call(1);
+  ipasir2_init(&solvers[0]);
+
   mock->expect_init_call(2);
   CHECK(mock->has_outstanding_expects());
 
-  ipasir2_init(&solvers[0]);
+  ipasir2_init(&solvers[1]);
   CHECK(mock->has_outstanding_expects());
 
   ipasir2_release(solvers[0]);
   CHECK(mock->has_outstanding_expects());
-  ipasir2_init(&solvers[1]);
+
+  ipasir2_release(solvers[1]);
   CHECK(!mock->has_outstanding_expects());
 }
