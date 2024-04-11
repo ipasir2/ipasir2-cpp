@@ -38,7 +38,7 @@ namespace detail {
   class dll_impl : public dll {
   public:
     explicit dll_impl(std::filesystem::path const& library)
-      : m_lib_handle{LoadLibrary(library.c_str())}, m_path{library}
+      : m_lib_handle{LoadLibraryW(library.c_str())}, m_path{library}
     {
       if (!m_lib_handle) {
         throw ipasir2_error{std::string{"Could not open "} + library.string()};

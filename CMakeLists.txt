@@ -30,9 +30,7 @@ target_link_libraries(ipasir2cpp INTERFACE ipasir2)
 # options, for instance for sanitizers, are set on a per-target basis.
 if (MSVC)
   add_compile_options(
-    # Use Unicode Windows APIs and keep Windows.h from #define'ing min() and max().
-    # TODO: add support for projects without /UNICODE
-    /DUNICODE
+    # Keep Windows.h from #define'ing min() and max():
     /DNOMINMAX
 
     # Make MSVC properly define __cplusplus. MSVC defaults to 199711L for compatibility.
