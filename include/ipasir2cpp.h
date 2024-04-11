@@ -12,7 +12,15 @@
 
 #pragma once
 
-#if __cplusplus < 201703L
+#if defined(_MSC_VER)
+  // MSVC sets __cplusplus to 199711L by default even when newer C++ standards
+  // are used (see /Zc:__cplusplus)
+  #define IPASIR2_CPP_STANDARD _MSVC_LANG
+#else
+  #define IPASIR2_CPP_STANDARD __cplusplus
+#endif
+
+#if IPASIR2_CPP_STANDARD < 201703L
 #error "ipasir2cpp.h requires C++17 or newer"
 #endif
 

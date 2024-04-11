@@ -33,10 +33,6 @@ if (MSVC)
     # Keep Windows.h from #define'ing min() and max():
     /DNOMINMAX
 
-    # Make MSVC properly define __cplusplus. MSVC defaults to 199711L for compatibility.
-    # TODO: when compiling with MSVC, check _MSVC_LANG instead, so this flag is not required
-    /Zc:__cplusplus
-
     /permissive-
     /W4
 

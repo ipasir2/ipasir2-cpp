@@ -13,10 +13,6 @@
 
 #pragma once
 
-#if __cplusplus < 201703L
-#error "ipasir2cpp.h requires C++17 or newer"
-#endif
-
 #include <ipasir2cpp.h>
 
 #include <filesystem>
