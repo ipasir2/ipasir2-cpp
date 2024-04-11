@@ -1,6 +1,6 @@
-[submodule "testdeps/ipasir2"]
-	path = testdeps/ipasir2
-	url = https://github.com/ipasir2/ipasir2
 [submodule "testdeps/Catch2"]
 	path = testdeps/Catch2
 	url = https://github.com/catchorg/Catch2
+[submodule "deps/ipasir2"]
+	path = deps/ipasir2
+	url = https://github.com/ipasir2/ipasir2

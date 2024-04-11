@@ -4,7 +4,7 @@ if(WIN32)
 endif()
 
 
-include(${CMAKE_CURRENT_LIST_DIR}/../testdeps/ipasir2/buildutils/load_solvers.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../deps/ipasir2/buildutils/load_solvers.cmake)
 
 load_minisat()
 

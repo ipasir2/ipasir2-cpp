@@ -1,18 +1,26 @@
-# This project contains the ipasir2-cpp tests and examples. Building it is not
-# required for using ipasir2cpp.h in other software.
+# ipasir2-cpp - C++ wrapper for IPASIR-2 solvers
+#
+# In standalone builds, this project contains the ipasir2-cpp tests and examples.
+# Building it is not required for using ipasir2cpp.h in other software.
 
 cmake_minimum_required(VERSION 3.19)
-project(ipasir2-cpp-tests)
 
+if (DEFINED PROJECT_NAME)
+  # ipasir2-cpp has been added via add_subdirectory(), so just define the ipasir2cpp target:
+  add_library(ipasir2cpp INTERFACE)
+  target_include_directories(ipasir2cpp INTERFACE include deps/ipasir2)
+  return()
+endif()
+
+
+project(ipasir2-cpp-tests)
 
 option(WITH_DOXYGEN "Add a target `doxygen` building Doxygen files for ipasir2cpp.h" OFF)
 
 include(buildutils/doxygen.cmake)
 
-# ipasir2cpp.h can be used with C++17, but has extra features when used with C++20
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -27,14 +35,14 @@ target_link_libraries(ipasir2cpp INTERFACE ipasir2)
 
 
 # Only basic compiler options that are used for all targets are set here. More special
-# options, for instance for sanitizers, are set on a per-target basis.
+# options, for instance for sanitizers, are set on a per-target basis. This project
+# is deliberately light on compiler options to make sure that the headers don't force
+# clients to set any.
 if (MSVC)
   add_compile_options(
-    # Keep Windows.h from #define'ing min() and max():
-    /DNOMINMAX
-
-    /permissive-
-    /W4
+    /DNOMINMAX    # Keep Windows.h from #defining min() and max()
+    /permissive-  # Be strict about C++ conformance
+    /W4           # Use highest warning level
 
     # TODO: fix size types in ipasir2.h, use size_t instead of int32_t
     # The following two warnings are related to possible loss of data when implicitly casting ints
@@ -56,6 +64,8 @@ endif()
 # In this project, ctest executes all testsuites as well as the example code
 enable_testing()
 
+add_subdirectory(deps)
 add_subdirectory(testdeps)
+
 add_subdirectory(tests)
 add_subdirectory(examples)

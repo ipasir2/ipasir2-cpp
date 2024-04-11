@@ -6,18 +6,21 @@ C++ porcelain for IPASIR-2
 **Caveat:** Like IPASIR-2, this project is work in progress. See [changelog](CHANGELOG.md).
 
 
-## How to use
+## Integrating `ipasir2-cpp`
 
-This library is header-only. An easy way for integrating this library is to add it as a Git
-submodule, and add the `include` directory to your include path. Alternatively, you can copy
-the headers into your application.
+This library is header-only. The most convenient way of using this project is to add it as
+a git submodule, and to add `include` to your include path. The headers depend on the main
+IPASIR-2 header `ipasir2.h`, which is provided in `deps/ipasir2`.
+
+In CMake projects, you can also add this project via `add_subdirectory()`, which creates a
+target `ipasir2cpp` carrying all needed include paths (`include` and `deps/ipasir2`).
 
 TODO: link latest release tag
 
 
 ## Example
 
-See the `examples` directory. The most basic one is `01_readme.cpp`:
+See the `examples` directory. `01_readme.cpp` shows how to solve a simple problem instance:
 
 ```
 namespace ip2 = ipasir2;
@@ -74,13 +77,14 @@ catch (ip2::ipasir2_error const& error) {
 
 ## Supported compilers
 
-`ipasir2cpp.h` and the tests require C++17. The code in the `examples` directory requires C++20.
+`ipasir2-cpp` requires a C++17-conformant compiler. The project is regularly tested with
+recent versions of Clang, GCC and MSVC.
 
-**TODO:** minimum compiler versions
+Building the tests and examples requires a C++20-conformant compiler.
 
 
 ## Supported platforms
 
-The platform-agnostic parts of `ipasir2-cpp` are defined in `ipasir2cpp.h`. This header contains
-all functionality except for loading solver libraries at runtime, which is implemented in
-a separate (and optional) header `ipasir2cpp_dl.h` for POSIX and Windows systems.
+`ipasir2cpp.h` is platform-independent. This header contains all functionality except
+for loading solver libraries at runtime, which is implemented in a separate (and optional)
+header `ipasir2cpp_dl.h` for POSIX and Windows systems.
