@@ -4,3 +4,6 @@
 [submodule "deps/ipasir2"]
 	path = deps/ipasir2
 	url = https://github.com/ipasir2/ipasir2
+[submodule "testdeps/ipasir2_solver_lingeling"]
+	path = testdeps/ipasir2_solver_lingeling
+	url = https://github.com/ipasir2/ipasir2_solver_lingeling

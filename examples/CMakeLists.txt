@@ -1,12 +1,8 @@
 if(WIN32)
-  # Currently the minisat dependency can't be built in cross-compilation
+  # Lingeling can't be built on Windows currently
   return()
 endif()
 
-
-include(${CMAKE_CURRENT_LIST_DIR}/../deps/ipasir2/buildutils/load_solvers.cmake)
-
-load_minisat()
 
 add_executable(examples-all
   01_readme.cpp
@@ -18,7 +14,8 @@ add_executable(examples-all
   main.cpp
 )
 
-target_link_libraries(examples-all PRIVATE ipasir2cpp minisat)
+target_compile_options(examples-all PRIVATE ${IPASIR2CPP_CXX_OPTS})
+target_link_libraries(examples-all PRIVATE ipasir2cpp lingeling-static)
 
 
 if (NOT WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -34,6 +31,7 @@ add_executable(example-utils-testsuite
   example_utils_tests.cpp
 )
 
+target_compile_options(example-utils-testsuite PRIVATE ${IPASIR2CPP_CXX_OPTS})
 target_link_libraries(example-utils-testsuite PRIVATE Catch2::Catch2WithMain)
 
 add_test(NAME example-utils-testsuite COMMAND example-utils-testsuite)

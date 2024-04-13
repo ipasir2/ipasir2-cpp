@@ -39,7 +39,7 @@ target_link_libraries(ipasir2cpp INTERFACE ipasir2)
 # is deliberately light on compiler options to make sure that the headers don't force
 # clients to set any.
 if (MSVC)
-  add_compile_options(
+  set(IPASIR2CPP_CXX_OPTS
     /DNOMINMAX    # Keep Windows.h from #defining min() and max()
     /permissive-  # Be strict about C++ conformance
     /W4           # Use highest warning level
@@ -53,7 +53,7 @@ if (MSVC)
   )
 else()
   # Assume GCC or clang:
-  add_compile_options(
+  set(IPASIR2CPP_CXX_OPTS
     -Wall
     -Wextra
     -Wunused
