@@ -18,7 +18,7 @@ public:
 
 private:
   std::vector<int32_t> m_literals;
-  int m_additional_attrs = 0;
+  // ... additional members ...
 };
 
 
@@ -35,7 +35,7 @@ public:
 
 private:
   std::vector<int32_t> m_literals;
-  int m_additional_attrs = 0; // placeholder for actual data
+  // ... additional members ...
 };
 
 

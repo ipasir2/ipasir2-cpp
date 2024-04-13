@@ -57,6 +57,8 @@ else()
     -Wall
     -Wextra
     -Wunused
+    -Warray-bounds
+    -Wunused-private-field
     -pedantic
   )
 endif()

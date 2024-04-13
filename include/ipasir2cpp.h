@@ -326,7 +326,8 @@ namespace detail {
   as_contiguous_int32s(Iter start, Iter stop, std::vector<int32_t>& buffer)
   {
     if (start == stop) {
-      buffer = {0};
+      buffer.clear();
+      buffer.push_back(0);
       return {buffer.data(), 0};
     }
 
