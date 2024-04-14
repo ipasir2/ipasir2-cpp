@@ -1,3 +1,5 @@
+[![Builds and tests](https://github.com/ipasir2/ipasir2-cpp/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/ipasir2/ipasir2-cpp/actions/workflows/cmake-multi-platform.yml)
+
 # ipasir2-cpp
 
 C++ porcelain for IPASIR-2
