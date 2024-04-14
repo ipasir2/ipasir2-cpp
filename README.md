@@ -1,4 +1,4 @@
-[![Builds and tests](https://github.com/ipasir2/ipasir2-cpp/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/ipasir2/ipasir2-cpp/actions/workflows/cmake-multi-platform.yml)
+[![Builds and tests](https://github.com/ipasir2/ipasir2-cpp/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/ipasir2/ipasir2-cpp/actions/workflows/build-and-test.yml)
 
 # ipasir2-cpp
 
